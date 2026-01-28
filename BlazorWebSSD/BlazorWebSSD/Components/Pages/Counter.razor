@@ -1,0 +1,50 @@
+﻿@page "/counter"
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@using BlazorWebSSD
+
+<h2>Динамический список строк</h2>
+
+<button @onclick="AddLineAsync" disabled="@isProcessing">
+    @(isProcessing ? "Загрузка..." : "Добавить строку")
+</button>
+
+<p>Текущее значение i: @i</p>
+
+<ul>
+    @for (int j = 0; j < i; j++)
+    {
+        <li>Строка №@j</li>
+    }
+</ul>
+
+@code {
+    private int i = 0;
+    private bool isProcessing = false;
+
+
+    protected override void OnInitialized()
+    {
+        GPIO.pinMode(256+3, GPIO.OUTPUT);
+        GPIO.pinMode(256+4, GPIO.OUTPUT);
+    }
+
+    private async Task AddLineAsync()
+    {
+        // Показываем окно подтверждения
+        //var confirmed = await JS.InvokeAsync<bool>("confirm", "Вы уверены, что хотите удалить?");
+
+        isProcessing = true;
+        StateHasChanged(); // Обновляем UI, чтобы показать "Загрузка..." и отключить кнопку
+
+        await Task.Delay(1000); // Имитация длительной операции (1 секунда)
+
+        i++;
+        isProcessing = false;
+        // StateHasChanged() вызовется автоматически после завершения метода,
+        // но можно вызвать явно, если нужно немедленно обновить — не обязательно здесь
+
+        GPIO.digitalWrite(256+3, i%2);
+        GPIO.digitalWrite(256+4, (i+1)%2);
+    }
+}

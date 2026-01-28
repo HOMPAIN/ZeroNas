@@ -1,0 +1,23 @@
+﻿@*управление сетевыми папками*@
+@page "/shared"
+@using BlazorWebSSD.Components.Rows
+<h1>Сетевые папки</h1>
+<h3>Добавить папку</h3>
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input @bind="AddFolderName" class="form-control" style="width: 150px;" placeholder="Имя папки" />
+    <button @onclick="AddFolder" class="btn btn-primary">Добавить</button>
+</div>
+<hr />
+
+@for (int i = 0; i < 10; i++)
+{
+    <SharedRow></SharedRow>
+}
+
+@code {
+    private string AddFolderName = "";
+    void AddFolder()
+    {
+        
+    }
+}

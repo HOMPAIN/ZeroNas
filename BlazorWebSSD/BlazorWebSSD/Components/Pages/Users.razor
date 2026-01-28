@@ -1,0 +1,93 @@
+﻿@*утилита управления ползователями*@
+@page "/users"
+@rendermode InteractiveServer
+@using BlazorWebSSD
+@using BlazorWebSSD.Components.Rows
+@inject UsersManager UsersManager
+@inject DisksConfig DisksConfig
+
+<h3>Новый пользователь</h3>
+<div class="d-flex align-items-center gap-2 mb-3">
+    <input @bind="login" class="form-control" style="width: 150px;" placeholder="Логин" />
+    <input @bind="password" type="password" class="form-control" style="width: 150px;" placeholder="Пароль" />
+    <button @onclick="AddUser" class="btn btn-primary">Добавить</button>
+</div>
+<hr />
+<h3>Пользователи самба</h3>
+<button class="btn btn-primary mb-3" @onclick="ReloadPage" disabled="@isProcessing">
+    @(isProcessing ? "Загрузка..." : "Обновить")
+</button>
+@if (SambaUsers == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    @foreach (var user in SambaUsers)
+    {
+        <UserRow OnDelete="Reload" UserName=@user></UserRow>
+    }
+}
+<hr />
+
+
+<h3>Пользователи системные</h3>
+<button class="btn btn-primary mb-3" @onclick="ReloadSystemPage" disabled="@isProcessing">
+    @(isProcessing ? "Загрузка..." : "Обновить")
+</button>
+
+
+@if (UsersManager.Users == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    @foreach (var user in UsersManager.Users)
+    {
+        <UserRow UserName=@user.Username></UserRow>
+    }
+}
+
+@code {
+    private string login = "";
+    private string password = "";
+
+    private bool isProcessing = true;
+
+    private List<string> SambaUsers = null;
+    protected override void OnInitialized()
+    {
+        UsersManager.GetAllUsersWithGroups();
+        SambaUsers = SambaManager.GetSambaUsers();
+        isProcessing = false;
+    }
+    private async Task Reload()
+    {
+        await ReloadPage();
+        await ReloadSystemPage();
+    }
+    private async Task ReloadPage()
+    {
+        isProcessing = true;
+        await Task.Run(() => SambaUsers = SambaManager.GetSambaUsers());
+        isProcessing = false;
+    }
+    private async Task ReloadSystemPage()
+    {
+        isProcessing = true;
+        await Task.Run(()=>UsersManager.GetAllUsersWithGroups());
+        isProcessing = false;
+    }
+    private async Task AddUser()
+    {
+        if (login.Length < 2 && password.Length < 8)
+            return;
+
+        SambaManager.AddUser(login, password);
+        login = "";
+        password = "";
+
+        await ReloadPage();
+    }
+}

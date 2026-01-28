@@ -1,0 +1,64 @@
+﻿@*строка утилиты справления сетевыми папками*@
+@using BlazorWebSSD
+@rendermode InteractiveServer
+@inject UsersManager UsersManager
+
+<div class="border border-dark bg-light p-2 mb-2">
+    <div class="row g-2">
+        <div class="col text-center border border-dark bg-light p-2 mb-2">Диск @Folder.MainDisk</div>
+        <div class="col text-center">Папка @Folder.Folder</div>
+            <div class="col">
+                Пользователи
+
+                <!-- Добавление -->
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-grow-1 me-2">
+                        <select id="mySelect" class="form-select" @bind="SelectedValue">
+                        @if (Users != null)
+                            {
+                            @foreach (var user in Users)
+                                {
+                                    <option value="@user">@user</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        W
+                        <input type="checkbox">
+                    <button class="btn btn-primary" style="width: 100px;" @onclick=AddUser>Добавить</button>
+                    </div>
+                </div>
+                <!-- Список пользователей -->
+                @for (int i = 0; i < 3; i++)
+                {
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="flex-grow-1 me-2 text-start">
+                            User@(i)
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" style="width: 100px;">Ударить</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        <div class="col text-center">
+            <button class="btn btn-sm btn-outline-primary">Удалить</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string SelectedValue { get; set; } = "1";
+    private List<string> Users = null;
+    public SharedFolder Folder = new SharedFolder();
+    protected override  void OnInitialized()
+    {
+        if (Users==null)
+            Users = SambaManager.GetSambaUsers();
+    }
+    private void AddUser()
+    {
+        
+    }
+}

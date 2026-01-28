@@ -1,0 +1,25 @@
+﻿@*строка утилиты управления пользователями*@
+@using BlazorWebSSD
+
+<div class="border border-dark bg-light p-2 mb-2">
+    <div class="row g-2">
+        <div class="col text-center">@UserName</div>
+        <div class="col text-center">
+            <button class="btn btn-sm btn-outline-primary" @onclick="UserDelete" >Удалить</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string UserName { get; set; } = "AAA";
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    private void UserDelete()
+    {
+        SambaManager.RemoveUser(UserName);
+
+        OnDelete.InvokeAsync();
+    }
+}

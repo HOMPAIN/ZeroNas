@@ -1,0 +1,67 @@
+﻿@*строка утилиты управления дисками*@
+@using BlazorWebSSD
+@inject DisksConfig DisksConfig
+@inject IJSRuntime JS
+
+<div class="border border-dark bg-light p-2 mb-2">
+    <div class="row g-2">
+        <div class="col text-center">@Model</div>
+        <div class="col text-center">@DiskName</div>
+        <div class="col text-center">@Size</div>
+        <div class="col text-center">@State</div>
+        <div class="col text-center">
+            <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
+        </div>
+        <div class="col text-center">
+            <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Model { get; set; } = "SSD123";
+    [Parameter]
+    public string DiskName { get; set; } = "sda1";
+    [Parameter]
+    public string Size { get; set; } = "12.0/123.0 GB";
+    [Parameter]
+    public string State { get; set; } = "Не используется";
+    [Parameter]
+    public DiskInfo ?Disk { get; set; }
+    [Parameter]
+    public PartitionInfo ?Partition { get; set; }
+
+    private async Task OnShareClick()
+    {
+        if (Disk == null) 
+        {
+            Console.WriteLine("Нет диска");
+            return;
+        }
+        // Показываем окно подтверждения
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Диск будет отформатирован, продолжить?");
+
+        if (confirmed)
+        {
+            Console.WriteLine("Добавляем диск " + Disk.Serial);
+            DisksConfig.AddDisk(Disk.Serial, 2);
+        }
+    }
+    private async Task OnBackupClick()
+    {
+        if (Disk == null)
+        {
+            Console.WriteLine("Нет диска");
+            return;
+        }
+        // Показываем окно подтверждения
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Диск будет отформатирован, продолжить?");
+
+        if (confirmed)
+        {
+            Console.WriteLine("Добавляем диск " + Disk.Serial);
+            DisksConfig.AddDisk(Disk.Serial, 1);
+        }
+    }
+}

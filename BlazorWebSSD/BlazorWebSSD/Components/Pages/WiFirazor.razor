@@ -1,0 +1,139 @@
+﻿@*управление подключением WiFi*@
+@page "/wifi"
+@rendermode InteractiveServer
+@using System.Threading.Tasks
+@using BlazorWebSSD
+
+<h3>Управление Wi-Fi</h3>
+
+<h4>Текущее подключение</h4>
+@if (currentConnection != null)
+{
+    <p><strong>SSID:</strong> @currentConnection.Ssid</p>
+    <p><strong>IP-адрес:</strong> @currentConnection.IpAddress</p>
+    <p><strong>Сигнал:</strong> @currentConnection.SignalStrength</p>
+    <p><strong>Скорость:</strong> @currentConnection.Speed</p>
+}
+else
+{
+    <p>Нет активного подключения.</p>
+}
+<hr />
+<h4>Доступные сети</h4>
+<button @onclick="LoadAvailableNetworks">Обновить</button>
+<ul>
+    @foreach (var net in availableNetworks)
+    {
+        <li>@net.Ssid (@net.Security)</li>
+    }
+</ul>
+<hr />
+<h4>Сохранённые сети</h4>
+<ul>
+    @foreach (var saved in savedNetworks)
+    {
+        <li>@saved.Ssid</li>
+    }
+</ul>
+<div style="margin-top: 8px;">
+    <label>Название сети для удаления:</label><br />
+    <input @bind="deleteSsid" style="width: 100%; margin-bottom: 8px;" />
+    <button @onclick="DeleteSavedNetwork">Удалить</button>
+    @if (!string.IsNullOrEmpty(deleteMessage))
+    {
+        <p>@deleteMessage</p>
+    }
+</div>
+<hr />
+<h4>Подключиться</h4>
+<div>
+    <label>Название сети (SSID):</label><br />
+    <input @bind="connectSsid" style="width: 100%; margin-bottom: 8px;" />
+</div>
+<div>
+    <label>Пароль:</label><br />
+    <input type="password" @bind="connectPassword" style="width: 100%; margin-bottom: 8px;" />
+</div>
+<button @onclick="ConnectToNetwork">Подключиться</button>
+@if (!string.IsNullOrEmpty(connectMessage))
+{
+    <p>@connectMessage</p>
+}
+
+@code {
+    private CurrentConnectionInfo currentConnection;
+    private List<WiFiNetwork> availableNetworks = new();
+    private List<SavedNetwork> savedNetworks = new();
+
+    private string connectSsid = "";
+    private string connectPassword = "";
+    private string connectMessage = "";
+
+    private string deleteSsid = "";
+    private string deleteMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        currentConnection = await Task.Run(() => WiFiManager.GetCurrentConnectionInfo());
+        availableNetworks = await Task.Run(() => WiFiManager.GetAvailableNetworks());
+        savedNetworks = await Task.Run(() => WiFiManager.GetSavedNetworks());
+        StateHasChanged();
+    }
+
+    private async Task LoadAvailableNetworks()
+    {
+        availableNetworks = await Task.Run(() => WiFiManager.GetAvailableNetworks());
+        StateHasChanged();
+    }
+
+    private async Task ConnectToNetwork()
+    {
+        connectMessage = "Подключение...";
+        StateHasChanged();
+        Console.WriteLine(connectSsid);
+        Console.WriteLine(connectPassword);
+        bool success = await Task.Run(() => WiFiManager.ConnectToNetwork(connectSsid, connectPassword));
+
+        if (success)
+        {
+            connectMessage = "Успешно подключено!";
+            await LoadData();
+        }
+        else
+        {
+            connectMessage = "Не удалось подключиться. Проверьте имя и пароль.";
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteSavedNetwork()
+    {
+        if (string.IsNullOrWhiteSpace(deleteSsid))
+        {
+            deleteMessage = "Введите название сети.";
+            StateHasChanged();
+            return;
+        }
+
+        deleteMessage = "Удаление...";
+        StateHasChanged();
+
+        bool success = await Task.Run(() => WiFiManager.DeleteSavedNetwork(deleteSsid));
+
+        if (success)
+        {
+            deleteMessage = "Сеть удалена.";
+            await LoadData(); // Обновляем список сохранённых сетей
+        }
+        else
+        {
+            deleteMessage = "Не удалось удалить сеть. Убедитесь, что она существует.";
+        }
+        StateHasChanged();
+    }
+}

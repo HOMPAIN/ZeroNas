@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWebSSD", "BlazorWebSSD\BlazorWebSSD.csproj", "{3902CD9D-091A-4BB3-97DA-7BD8DA450950}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3902CD9D-091A-4BB3-97DA-7BD8DA450950}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3902CD9D-091A-4BB3-97DA-7BD8DA450950}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3902CD9D-091A-4BB3-97DA-7BD8DA450950}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3902CD9D-091A-4BB3-97DA-7BD8DA450950}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EDD2A34D-7C7B-47D2-870E-185642F2AD5F}
+	EndGlobalSection
+EndGlobal
