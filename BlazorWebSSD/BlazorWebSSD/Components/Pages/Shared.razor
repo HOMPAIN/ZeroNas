@@ -1,14 +1,24 @@
 ﻿@*управление сетевыми папками*@
 @page "/shared"
 @using BlazorWebSSD.Components.Rows
+@inject DiskManager DiskManager
 <h1>Сетевые папки</h1>
 <h3>Добавить папку</h3>
 <div class="d-flex align-items-center gap-2 mb-3">
     <input @bind="AddFolderName" class="form-control" style="width: 150px;" placeholder="Имя папки" />
+    <select id="DiskSelect" class="form-select" style="width: 150px;"  @bind="SelectedValue">
+        @if (Disks != null)
+        {
+            @foreach (var disk in Disks)
+            {
+                <option value="@disk">@disk</option>
+            }
+        }
+    </select>
     <button @onclick="AddFolder" class="btn btn-primary">Добавить</button>
 </div>
 <hr />
-
+<h3>Список папок</h3>
 @for (int i = 0; i < 10; i++)
 {
     <SharedRow></SharedRow>
@@ -16,6 +26,14 @@
 
 @code {
     private string AddFolderName = "";
+    private string SelectedValue { get; set; } = "1";
+    List<string> Disks = null;
+    protected override void OnInitialized()
+    {
+        DiskManager.Refresh();
+        List<string> Disks = new List<string>();
+
+    }
     void AddFolder()
     {
         
