@@ -51,7 +51,8 @@
 @code {
     private string SelectedValue { get; set; } = "1";
     private List<string> Users = null;
-    public SharedFolder Folder = new SharedFolder();
+    [Parameter]
+    public SharedFolder Folder { get; set; } = new SharedFolder();
     protected override  void OnInitialized()
     {
         if (Users==null)

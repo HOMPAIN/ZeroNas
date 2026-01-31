@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<DiskManager>();
 builder.Services.AddSingleton<UsersManager>();
 builder.Services.AddSingleton<DisksConfig>();
+builder.Services.AddSingleton<SharedFoldersConfig>();
 builder.Services.AddSingleton<MyServer>();
 
 // Регистрация фоновой службы

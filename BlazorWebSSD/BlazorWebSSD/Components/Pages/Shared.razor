@@ -1,17 +1,19 @@
 ﻿@*управление сетевыми папками*@
 @page "/shared"
+@rendermode InteractiveServer
 @using BlazorWebSSD.Components.Rows
 @inject DiskManager DiskManager
+@inject SharedFoldersConfig SharedFoldersConfig
 <h1>Сетевые папки</h1>
 <h3>Добавить папку</h3>
 <div class="d-flex align-items-center gap-2 mb-3">
     <input @bind="AddFolderName" class="form-control" style="width: 150px;" placeholder="Имя папки" />
-    <select id="DiskSelect" class="form-select" style="width: 150px;"  @bind="SelectedValue">
+    <select id="DiskSelect" class="form-select" style="width: 300px;"  @bind="SelectedValue">
         @if (Disks != null)
         {
-            @foreach (var disk in Disks)
+            @for (int i=0;i< Disks.Count;i++)
             {
-                <option value="@disk">@disk</option>
+                <option value="@i.ToString()">@Disks[i]</option>
             }
         }
     </select>
@@ -19,23 +21,37 @@
 </div>
 <hr />
 <h3>Список папок</h3>
-@for (int i = 0; i < 10; i++)
+@if (SharedFoldersConfig.SharedFolders != null)
 {
-    <SharedRow></SharedRow>
+    @for (int i = 0; i < SharedFoldersConfig.SharedFolders.Count; i++)
+    {
+        <SharedRow Folder=@SharedFoldersConfig.SharedFolders[i]></SharedRow>
+    }
 }
 
 @code {
     private string AddFolderName = "";
-    private string SelectedValue { get; set; } = "1";
+    private string SelectedValue { get; set; } = "-1";
     List<string> Disks = null;
     protected override void OnInitialized()
     {
         DiskManager.Refresh();
-        List<string> Disks = new List<string>();
-
+        Disks = new List<string>();
+        for (int i = 0; i < DiskManager.Disks.Count;i++)
+        {
+            Disks.Add(DiskManager.Disks[i].DeviceName);
+        }
     }
-    void AddFolder()
+    private void AddFolder()
     {
-        
+        int i = -1;
+        if (!int.TryParse(SelectedValue,out i))
+            return;
+        if (i == -1)
+            return;
+        SharedFolder folder=new SharedFolder();
+        folder.Folder = AddFolderName;
+        folder.MainDisk = DiskManager.Disks[i].Serial;
+        SharedFoldersConfig.AddUpdateFolder(folder);
     }
 }

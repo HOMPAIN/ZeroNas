@@ -7,13 +7,15 @@ namespace BlazorWebSSD
     {
         private readonly MyServer _worker;
 
-        public MyService(MyServer worker, DisksConfig _DC)
+        public MyService(MyServer worker, DisksConfig _DC, SharedFoldersConfig _SFC)
         {
             _worker = worker;
             try
             {
                 _DC.Load();
-            }catch
+                _SFC.Load();
+            }
+            catch
             { }
         }
 
