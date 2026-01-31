@@ -14,7 +14,6 @@ builder.Services.AddSingleton<MyServer>();
 
 // Регистрация фоновой службы
 builder.Services.AddHostedService<MyService>();
-builder.Services.AddHostedService<WiFiMonitoringService>();
 
 var app = builder.Build();
 
