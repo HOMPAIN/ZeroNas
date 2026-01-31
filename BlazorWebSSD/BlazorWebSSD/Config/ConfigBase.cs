@@ -21,7 +21,7 @@ namespace BlazorWebSSD
             {
                 WriteIndented = true
             };
-            string jsonString = JsonSerializer.Serialize(this, options);
+            string jsonString = JsonSerializer.Serialize(this as T, options);
             File.WriteAllText(path, jsonString);
         }
 
