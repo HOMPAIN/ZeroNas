@@ -12,7 +12,9 @@ namespace BlazorWebSSD
             _worker = worker;
             try
             {
+                Console.WriteLine("Загрузка конфигурации дисков");
                 _DC.Load();
+                Console.WriteLine("Загрузка конфигурации сетевых папок");
                 _SFC.Load();
             }
             catch

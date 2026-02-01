@@ -26,12 +26,12 @@ namespace BlazorWebSSD
         }
 
         // Загружает данные из файла в текущий экземпляр
-        public void Load()
+        public string Load()
         {
-            Load(SavePath);
+            return Load(SavePath);
         }
 
-        public void Load(string path)
+        public string Load(string path)
         {
             if (!File.Exists(path))
                 throw new FileNotFoundException($"Файл конфигурации не найден: {path}");
@@ -44,9 +44,12 @@ namespace BlazorWebSSD
             {
                 if (!prop.CanWrite) continue;
 
+                //Console.WriteLine(prop.Name);
                 var loadedValue = prop.GetValue(loaded);
                 prop.SetValue(this, loadedValue);
             }
+
+            return jsonString;
         }
 
         // Статический метод для загрузки нового экземпляра из файла
