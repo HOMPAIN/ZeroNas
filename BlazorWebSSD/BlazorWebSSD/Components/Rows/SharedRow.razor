@@ -2,6 +2,7 @@
 @using BlazorWebSSD
 @rendermode InteractiveServer
 @inject UsersManager UsersManager
+@inject SharedFoldersConfig SharedFoldersConfig
 
 <div class="border border-dark bg-light p-2 mb-2">
     <div class="row g-2">
@@ -25,22 +26,33 @@
                     </div>
                     <div>
                         W
-                        <input type="checkbox">
+                        <input type="checkbox" @bind="RW">
                     <button class="btn btn-primary" style="width: 100px;" @onclick=AddUser>Добавить</button>
                     </div>
                 </div>
                 <!-- Список пользователей -->
-                @for (int i = 0; i < 3; i++)
-                {
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="flex-grow-1 me-2 text-start">
-                            User@(i)
-                        </div>
-                        <div>
-                            <button class="btn btn-primary" style="width: 100px;">Ударить</button>
-                        </div>
+            @for (int i = 0; i < Folder.UsersRW.Count; i++)
+            {
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-grow-1 me-2 text-start">
+                        @("RW " + Folder.UsersRW[i])
                     </div>
-                }
+                    <div>
+                        <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserRW(Folder.UsersRW[i])">Ударить</button>
+                    </div>
+                </div>
+            }
+            @for (int i = 0; i < Folder.UsersR.Count; i++)
+            {
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-grow-1 me-2 text-start">
+                        @("R  " + Folder.UsersR[i])
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserR(Folder.UsersR[i])">Ударить</button>
+                    </div>
+                </div>
+            }
             </div>
         <div class="col text-center">
             <button class="btn btn-sm btn-outline-primary">Удалить</button>
@@ -49,10 +61,14 @@
 </div>
 
 @code {
+    private bool RW = false;
     private string SelectedValue { get; set; } = "1";
     private List<string> Users = null;
     [Parameter]
     public SharedFolder Folder { get; set; } = new SharedFolder();
+    public string UserName { get; set; } = "AAA";
+    [Parameter]
+    public EventCallback OnUpdate { get; set; }
     protected override  void OnInitialized()
     {
         if (Users==null)
@@ -60,6 +76,22 @@
     }
     private void AddUser()
     {
-        
+        if (SelectedValue == "1")
+            return;
+        if (RW)
+            Folder.UsersRW.Add(SelectedValue);
+        else
+            Folder.UsersR.Add(SelectedValue);
+        SharedFoldersConfig.AddUpdateFolder(Folder);
+    }
+    private void DeleteUserRW(string _User)
+    {
+        Folder.UsersRW.Remove(_User);
+        SharedFoldersConfig.AddUpdateFolder(Folder);
+    }
+    private void DeleteUserR(string _User)
+    {
+        Folder.UsersR.Remove(_User);
+        SharedFoldersConfig.AddUpdateFolder(Folder);
     }
 }
