@@ -1,68 +1,13 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 @using BlazorWebSSD
-@inject DiskManager DiskManager
 @inject DisksConfig DisksConfig
 
 <h3>Диски и разделы</h3>
-
-
-<button class="btn btn-primary mb-3" @onclick="ReloadPage" disabled="@isProcessing">
-    @(isProcessing ? "Загрузка..." : "Обновить")
-</button>
-
-@if (DiskManager.Disks.Count == 0)
-{
-    <p>Загрузка...</p>
-}
-else
-{
-    @foreach (var disk in DiskManager.Disks)
-    {
-        @if (disk.Partitions.Count == 0)
-        {
-            <PartitionRow Model="@disk.Model.ToString()" 
-            Size="@disk.DeviceSizeBytes.ToString()" 
-            State="*" />
-        }
-        else
-        {
-            @foreach (var part in disk.Partitions)
-            {
-                int type = DisksConfig.FindDisk(disk.Serial);
-                string state = "Не используется";
-                if (type == 1)
-                    state = "Backup";
-                if (type == 2)
-                    state = "Shared";
-                <PartitionRow Model="@disk.Model.ToString()"
-                              DiskName=@part.DeviceName
-                              Size="@((part.UsedBytes / 1073741824.0).ToString("0.0") + "/" + (part.SizeBytes / 1073741824.0).ToString("0.0"))"
-                              State="@state"
-                              Disk=@disk
-                              Partition=@part />
-            }
-        }
-    }
-}
-@for(int i=0;i<10;i++)
-{
-    <PartitionRow />
-}
 
 @code {
     private bool isProcessing = false;
     protected override void OnInitialized()
     {
-        DiskManager.Refresh();
-    }
-
-    private async Task ReloadPage()
-    {
-        isProcessing = true;
-        StateHasChanged();
-        await Task.Run(() => DiskManager.Refresh()); 
-        isProcessing = false;
-        StateHasChanged();
     }
 }

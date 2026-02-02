@@ -163,24 +163,29 @@ namespace BlazorWebSSD
     /// Управляет обнаружением и сбором информации о дисках и разделах в Linux.
     /// Использует системные утилиты lsblk, df и udevadm для получения данных.
     /// </summary>
-    public class DiskManager
+    public static class DiskManager
     {
-        /// <summary>Список обнаруженных дисков с их разделами.</summary>
-        public List<DiskInfo> Disks { get; } = new();
-
         /// <summary>
-        /// Обновляет информацию о дисках и разделах, выполняя системные команды
-        /// и парся их вывод. Очищает текущие данные перед обновлением.
+        /// Запрашивает информацию о дисках и разделах, выполняя системные команды
+        /// и парся их вывод.
         /// </summary>
-        public void Refresh()
+        public static Task<List<DiskInfo>?> GetDisksAsync()
         {
-            Disks.Clear();
+            return Task.Run(GetDisks);
+        }
+        /// <summary>
+        /// Запрашивает информацию о дисках и разделах, выполняя системные команды
+        /// и парся их вывод.
+        /// </summary>
+        public static List<DiskInfo>? GetDisks()
+        {
+            List<DiskInfo>  disks=new List<DiskInfo>();
 
             var lsblkJson = RunCommand("lsblk", "-J -b -o NAME,SIZE,TYPE,MOUNTPOINT");
-            if (string.IsNullOrEmpty(lsblkJson)) return;
+            if (string.IsNullOrEmpty(lsblkJson)) return null;
 
             using var doc = JsonDocument.Parse(lsblkJson);
-            if (!doc.RootElement.TryGetProperty("blockdevices", out var devices)) return;
+            if (!doc.RootElement.TryGetProperty("blockdevices", out var devices)) return null;
 
             foreach (var dev in devices.EnumerateArray())
             {
@@ -237,9 +242,10 @@ namespace BlazorWebSSD
                         }
                     }
 
-                    Disks.Add(disk);
+                    disks.Add(disk);
                 }
             }
+            return disks;
         }
 
         /// <summary>

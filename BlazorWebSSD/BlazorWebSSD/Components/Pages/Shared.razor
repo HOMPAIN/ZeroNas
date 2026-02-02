@@ -2,7 +2,6 @@
 @page "/shared"
 @rendermode InteractiveServer
 @using BlazorWebSSD.Components.Rows
-@inject DiskManager DiskManager
 @inject SharedFoldersConfig SharedFoldersConfig
 <h1>Сетевые папки</h1>
 <h3>Добавить папку</h3>
@@ -32,14 +31,16 @@
 @code {
     private string AddFolderName = "";
     private string SelectedValue { get; set; } = "-1";
+    private List<DiskInfo>? DisksI = null;
     List<string> Disks = null;
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        DiskManager.Refresh();
+        DisksI = await DiskManager.GetDisksAsync();
+        if (DisksI == null) return;
         Disks = new List<string>();
-        for (int i = 0; i < DiskManager.Disks.Count;i++)
+        for (int i = 0; i < DisksI.Count; i++)
         {
-            Disks.Add(DiskManager.Disks[i].DeviceName);
+            Disks.Add(DisksI[i].DeviceName);
         }
     }
     private void AddFolder()
@@ -51,7 +52,7 @@
             return;
         SharedFolder folder=new SharedFolder();
         folder.Folder = AddFolderName;
-        folder.MainDisk = DiskManager.Disks[i].Serial;
+        folder.MainDisk = DisksI[i].Serial;
         SharedFoldersConfig.AddUpdateFolder(folder);
     }
 }

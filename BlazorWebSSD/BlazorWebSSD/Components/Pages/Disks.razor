@@ -2,7 +2,6 @@
 @page "/disks"
 @rendermode InteractiveServer
 @using BlazorWebSSD
-@inject DiskManager DiskManager
 @inject DisksConfig DisksConfig
 @using BlazorWebSSD.Components.Rows
 
@@ -13,13 +12,13 @@
     @(isProcessing ? "Загрузка..." : "Обновить")
 </button>
 
-@if (DiskManager.Disks.Count == 0)
+@if (Disks_ == null)
 {
     <p>Загрузка...</p>
 }
 else
 {
-    @foreach (var disk in DiskManager.Disks)
+    @foreach (var disk in Disks_)
     {
         @if (disk.Partitions.Count == 0)
         {
@@ -49,18 +48,17 @@ else
 }
 
 @code {
+    private List<DiskInfo>? Disks_=null;
     private bool isProcessing = false;
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        DiskManager.Refresh();
+        Disks_ = await DiskManager.GetDisksAsync();
     }
 
     private async Task ReloadPage()
     {
         isProcessing = true;
-        StateHasChanged();
-        await Task.Run(() => DiskManager.Refresh()); 
+        Disks_ = await DiskManager.GetDisksAsync();
         isProcessing = false;
-        StateHasChanged();
     }
 }
