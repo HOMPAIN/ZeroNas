@@ -9,9 +9,10 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<DisksConfig>();
 builder.Services.AddSingleton<SharedFoldersConfig>();
 builder.Services.AddSingleton<MyServer>();
+builder.Services.AddSingleton<NasService>();
 
 // Регистрация фоновой службы
-builder.Services.AddHostedService<MyService>();
+builder.Services.AddHostedService<NasService>();
 
 var app = builder.Build();
 
