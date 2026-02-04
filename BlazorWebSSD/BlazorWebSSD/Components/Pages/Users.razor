@@ -3,7 +3,6 @@
 @rendermode InteractiveServer
 @using BlazorWebSSD
 @using BlazorWebSSD.Components.Rows
-@inject UsersManager UsersManager
 @inject DisksConfig DisksConfig
 
 <h3>Новый пользователь</h3>
@@ -37,13 +36,13 @@ else
 </button>
 
 
-@if (UsersManager.Users == null)
+@if (Users_ == null)
 {
     <p>Загрузка...</p>
 }
 else
 {
-    @foreach (var user in UsersManager.Users)
+    @foreach (var user in Users_)
     {
         <UserRow UserName=@user.Username></UserRow>
     }
@@ -56,9 +55,10 @@ else
     private bool isProcessing = true;
 
     private List<string> SambaUsers = null;
+    private List<UserEntry>? Users_ = null;
     protected override void OnInitialized()
     {
-        UsersManager.GetAllUsersWithGroups();
+        Users_=UsersManager.GetAllUsersWithGroups();
         SambaUsers = SambaManager.GetSambaUsers();
         isProcessing = false;
     }
@@ -76,7 +76,7 @@ else
     private async Task ReloadSystemPage()
     {
         isProcessing = true;
-        await Task.Run(()=>UsersManager.GetAllUsersWithGroups());
+        await Task.Run(() => Users_ = UsersManager.GetAllUsersWithGroups());
         isProcessing = false;
     }
     private async Task AddUser()

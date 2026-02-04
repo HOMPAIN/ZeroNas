@@ -22,9 +22,8 @@ namespace BlazorWebSSD
     /// <summary>
     /// Управляет пользователями в Linux-системе (чтение, добавление, удаление).
     /// </summary>
-    public class UsersManager
+    public static  class UsersManager
     {
-        public List<UserEntry> ?Users { get; set; }
         private const string PasswdPath = "/etc/passwd"; // Путь к файлу с базовой информацией о пользователях
         private const string GroupPath = "/etc/group";   // Путь к файлу с информацией о группах
 
@@ -32,7 +31,7 @@ namespace BlazorWebSSD
         /// Считывает всех пользователей из /etc/passwd и сопоставляет им группы из /etc/group.
         /// </summary>
         /// <returns>Список объектов UserEntry со всеми пользователями и их группами.</returns>
-        public List<UserEntry> GetAllUsersWithGroups()
+        public static List<UserEntry> GetAllUsersWithGroups()
         {
             var users = ReadPasswdFile();        // Список пользователей из /etc/passwd
             var groups = ReadGroupFile();        // Список групп из /etc/group
@@ -51,7 +50,6 @@ namespace BlazorWebSSD
                         user.Groups.Add(group.Name);
                 }
             }
-            Users = users;
             return users;
         }
 
@@ -62,7 +60,7 @@ namespace BlazorWebSSD
         /// <param name="createHome">Создавать ли домашнюю директорию (по умолчанию true).</param>
         /// <param name="shell">Путь к оболочке (по умолчанию /bin/bash).</param>
         /// <param name="groups">Массив дополнительных групп, в которые добавить пользователя.</param>
-        public void AddUser(string username, bool createHome = true, string shell = "/bin/bash", string[] groups = null)
+        public static void AddUser(string username, bool createHome = true, string shell = "/bin/bash", string[] groups = null)
         {
             if (string.IsNullOrWhiteSpace(username))
                 throw new ArgumentException("Username cannot be null or empty.", nameof(username));
@@ -89,7 +87,7 @@ namespace BlazorWebSSD
         /// <param name="removeHome">Удалять ли домашнюю директорию и почтовый ящик (по умолчанию true).</param>
         /// <exception cref="ArgumentException">Если имя пользователя пустое или null.</exception>
         /// <exception cref="InvalidOperationException">Если команда userdel завершилась с ошибкой.</exception>
-        public void RemoveUser(string username, bool removeHome = true)
+        public static void RemoveUser(string username, bool removeHome = true)
         {
             if (string.IsNullOrWhiteSpace(username))
                 throw new ArgumentException("Username cannot be null or empty.", nameof(username));
@@ -108,7 +106,7 @@ namespace BlazorWebSSD
         /// <param name="command">Имя исполняемой команды (например, "useradd").</param>
         /// <param name="arguments">Аргументы команды.</param>
         /// <exception cref="InvalidOperationException">Если команда завершилась с ненулевым кодом.</exception>
-        private void RunCommand(string command, string arguments)
+        private static void RunCommand(string command, string arguments)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -133,7 +131,7 @@ namespace BlazorWebSSD
         /// <summary>
         /// Читает файл /etc/passwd и возвращает список пользователей.
         /// </summary>
-        private List<UserEntry> ReadPasswdFile()
+        private static List<UserEntry> ReadPasswdFile()
         {
             var users = new List<UserEntry>();       // Результирующий список пользователей
             if (!File.Exists(PasswdPath))
@@ -166,7 +164,7 @@ namespace BlazorWebSSD
         /// <summary>
         /// Читает файл /etc/group и возвращает список групп.
         /// </summary>
-        private List<GroupEntry> ReadGroupFile()
+        private static List<GroupEntry> ReadGroupFile()
         {
             var groups = new List<GroupEntry>();     // Результирующий список групп
             if (!File.Exists(GroupPath))

@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddSingleton<UsersManager>();
 builder.Services.AddSingleton<DisksConfig>();
 builder.Services.AddSingleton<SharedFoldersConfig>();
 builder.Services.AddSingleton<MyServer>();
