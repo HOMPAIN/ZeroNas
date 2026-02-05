@@ -35,6 +35,7 @@ namespace BlazorWebSSD
         {
             return _worker.StopAsync();
         }
+        //смонтировать все сконфигурированные диски 
         public void MountAllDisks()
         {
             List<DiskInfo>? disks = DiskManager.GetDisks();
@@ -62,6 +63,34 @@ namespace BlazorWebSSD
                 }
             }
 
+        }
+        //размантировать все сконфигурированные диски 
+        public void UnmountAll()
+        {
+            List<DiskInfo>? disks = DiskManager.GetDisks();
+            if (disks == null) return;
+            //диски для шаринга
+            for (int i = 0; i < DisksConfig.IDShare.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDShare[i]) continue;
+                    disk.Partitions[0].Unmount();
+                }
+            }
+            //диски для бэкапа
+            for (int i = 0; i < DisksConfig.IDBackup.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDBackup[i]) continue;
+                    disk.Partitions[0].Unmount();
+                }
+            }
         }
     }
 }
