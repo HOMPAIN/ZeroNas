@@ -39,5 +39,17 @@
                 }
             }
         }
+        public void RemoveFolder(SharedFolder _Folder)
+        {
+            for (int i = 0; i < SharedFolders.Count; i++)
+            {
+                if (SharedFolders[i] == _Folder)
+                {
+                    SharedFolders.RemoveAt(i);
+                    Save();
+                    break;
+                }
+            }
+        }
     }
 }

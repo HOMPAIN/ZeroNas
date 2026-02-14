@@ -54,7 +54,7 @@
             }
             </div>
         <div class="col text-center">
-            <button class="btn btn-sm btn-outline-primary">Удалить</button>
+            <button class="btn btn-sm btn-outline-primary" @onclick="Delete">Удалить</button>
         </div>
     </div>
 </div>
@@ -67,7 +67,7 @@
     public SharedFolder Folder { get; set; } = new SharedFolder();
     public string UserName { get; set; } = "AAA";
     [Parameter]
-    public EventCallback OnUpdate { get; set; }
+    public EventCallback OnDelete { get; set; }
     protected override  void OnInitialized()
     {
         if (Users==null)
@@ -92,5 +92,11 @@
     {
         Folder.UsersR.Remove(_User);
         SharedFoldersConfig.AddUpdateFolder(Folder);
+    }
+    //удадение папки
+    private void Delete()
+    {
+        SharedFoldersConfig.RemoveFolder(Folder);
+        OnDelete.InvokeAsync();
     }
 }

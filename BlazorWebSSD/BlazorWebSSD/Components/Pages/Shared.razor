@@ -24,7 +24,7 @@
 {
     @for (int i = 0; i < SharedFoldersConfig.SharedFolders.Count; i++)
     {
-        <SharedRow Folder=@SharedFoldersConfig.SharedFolders[i]></SharedRow>
+        <SharedRow Folder=@SharedFoldersConfig.SharedFolders[i] OnDelete="Reload"></SharedRow>
     }
 }
 
@@ -54,5 +54,9 @@
         folder.Folder = AddFolderName;
         folder.MainDisk = DisksI[i].Serial;
         SharedFoldersConfig.AddUpdateFolder(folder);
+    }
+    private void Reload()
+    {
+        StateHasChanged();
     }
 }
