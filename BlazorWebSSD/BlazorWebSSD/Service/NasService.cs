@@ -28,7 +28,7 @@ namespace BlazorWebSSD
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            return _worker.StartAsync(cancellationToken);
+            return  _worker.StartAsync(cancellationToken);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

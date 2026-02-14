@@ -23,7 +23,8 @@ namespace BlazorWebSSD
             {
                 while (!_cts.Token.IsCancellationRequested)
                 {
-                    try
+                    Task.Delay(5000, _cts.Token);
+                    /*try
                     {
                         // Ваша фоновая логика здесь
                         _logger.LogInformation("Фоновая задача выполняется...");
@@ -37,7 +38,7 @@ namespace BlazorWebSSD
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Ошибка в фоновой задаче");
-                    }
+                    }*/
                 }
 
                 IsRunning = false;
