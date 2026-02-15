@@ -168,8 +168,15 @@ namespace BlazorWebSSD
         // 4. Добавить папку в шаринг
         public static void AddShare(string shareName, string path, List<string> users, bool readOnly = false)
         {
+            Console.Write("Add share " + shareName + " to path " + path + " for ");
+            foreach (var user in users)
+                Console.Write(user + " ");
+            Console.WriteLine();
             if (!Directory.Exists(path))
-                throw new DirectoryNotFoundException($"Path does not exist: {path}");
+            {
+                Directory.CreateDirectory(path);
+                Console.WriteLine($"Path does not exist: {path}, create path");
+            }
 
             EnsureGlobalSection(); // ← гарантирует наличие [global] с security = user
 

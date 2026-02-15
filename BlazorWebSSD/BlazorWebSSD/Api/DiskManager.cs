@@ -31,6 +31,7 @@ namespace BlazorWebSSD
         /// <returns>true, если монтирование успешно; иначе false.</returns>
         public bool Mount(string mountPath)
         {
+            Console.WriteLine(DeviceName + " mount to " + mountPath);
             if (string.IsNullOrWhiteSpace(mountPath))
                 return false;
 

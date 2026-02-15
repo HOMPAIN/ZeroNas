@@ -160,5 +160,33 @@ namespace BlazorWebSSD
                 }
             }
         }
+        //расшарить все сетевые папки
+        public void SambaShareAll()
+        {
+            //сначала удалим все шары
+            SambaManager.RemoveAllShares();
+
+            //теперь добавим новые согласно конфигу
+            for (int j = 0; j < SharedFoldersConfig.SharedFolders.Count; j++)
+            {
+                SharedFolder share = SharedFoldersConfig.SharedFolders[j];
+                //ищим на каком диске и в какой папке находится сетевое хранилище
+                for (int i = 0; i < DisksConfig.IDShare.Count; i++)
+                {
+                    if (DisksConfig.IDShare[i] == share.MainDisk)
+                    {
+                        string path = "DiskShare" + i + "/" + share.Folder;
+                        //расшариваем папку
+                        SambaManager.AddShare(share.Folder, path, share.UsersRW);
+                        break;
+                    }
+                }
+            }
+        }
+        //отменить шаринг всех папок
+        public void UnSambaShareAll()
+        {
+            SambaManager.RemoveAllShares();
+        }
     }
 }
