@@ -225,7 +225,7 @@ namespace BlazorWebSSD
                                 MountPoint = mountPoint
                             };
 
-                            if (!string.IsNullOrEmpty(mountPoint))
+                            if (!string.IsNullOrEmpty(mountPoint) && mountPoint!="-")
                             {
                                 var dfOutput = RunCommand("df", $"--output=used {mountPoint} -B1");
                                 if (!string.IsNullOrEmpty(dfOutput))
