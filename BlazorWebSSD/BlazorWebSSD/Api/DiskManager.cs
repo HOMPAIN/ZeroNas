@@ -22,6 +22,8 @@ namespace BlazorWebSSD
 
         /// <summary>Текущая точка монтирования (может быть null или "—").</summary>
         public string MountPoint { get; set; } = "—";
+        /// <summary>Тип файловой системы (например, "ext4", "ntfs", "vfat"). Может быть null или "—".</summary>
+        public string FileSystemType { get; set; } = "—";
 
         /// <summary>
         /// Монтирует раздел в указанную директорию.
@@ -104,6 +106,96 @@ namespace BlazorWebSSD
             return false;
         }
 
+        /// <summary>
+        /// Форматирует раздел в указанную файловую систему.
+        /// Поддерживаемые типы: "ext4", "exfat", "ntfs".
+        /// Перед форматированием раздел будет размонтирован.
+        /// </summary>
+        /// <param name="fileSystemType">Тип файловой системы (например, "ext4").</param>
+        /// <param name="label">Метка тома (опционально).</param>
+        /// <returns>true, если форматирование успешно; иначе false.</returns>
+        public bool Format(string fileSystemType, string? label = null)
+        {
+            if (string.IsNullOrWhiteSpace(fileSystemType))
+                throw new ArgumentException("File system type cannot be null or empty.", nameof(fileSystemType));
+
+            fileSystemType = fileSystemType.ToLowerInvariant();
+
+            // Проверяем поддерживаемые типы
+            if (fileSystemType != "ext4" && fileSystemType != "exfat" && fileSystemType != "ntfs")
+                throw new NotSupportedException($"Unsupported file system type: {fileSystemType}");
+
+            Console.WriteLine($"Formatting /dev/{DeviceName} as {fileSystemType}...");
+
+            // 1. Размонтируем, если смонтирован
+            if (MountPoint != "—" && MountPoint != "-")
+            {
+                Console.WriteLine($"Unmounting {MountPoint} before formatting...");
+                if (!Unmount())
+                {
+                    Console.Error.WriteLine("Failed to unmount partition. Formatting aborted.");
+                    return false;
+                }
+            }
+
+            // 2. Собираем аргументы для mkfs
+            string command;
+            string args;
+
+            switch (fileSystemType)
+            {
+                case "ext4":
+                    command = "mkfs.ext4";
+                    args = $"-F /dev/{DeviceName}";
+                    if (!string.IsNullOrEmpty(label))
+                        args += $" -L \"{label}\"";
+                    break;
+
+                case "exfat":
+                    command = "mkfs.exfat";
+                    args = $"/dev/{DeviceName}";
+                    if (!string.IsNullOrEmpty(label))
+                        args += $" -n \"{label}\"";
+                    break;
+
+                case "ntfs":
+                    command = "mkfs.ntfs";
+                    args = $"-f /dev/{DeviceName}"; // -f = fast format
+                    if (!string.IsNullOrEmpty(label))
+                        args += $" -L \"{label}\"";
+                    break;
+
+                default:
+                    return false;
+            }
+
+            // 3. Выполняем форматирование
+            try
+            {
+                var result = RunCommand(command, args);
+                if (result != null)
+                {
+                    Console.WriteLine($"Successfully formatted /dev/{DeviceName} as {fileSystemType}.");
+                    return true;
+                }
+                else
+                {
+                    Console.Error.WriteLine($"Failed to format /dev/{DeviceName} as {fileSystemType}.");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception during formatting: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Удобный метод для быстрого форматирования в ext4 (рекомендуется для Samba).
+        /// </summary>
+        public bool FormatAsExt4(string? label = null) => Format("ext4", label);
+
         // Вспомогательный метод для запуска команд (локальная копия из DiskManager или общий)
         private static string? RunCommand(string command, string args)
         {
@@ -123,18 +215,33 @@ namespace BlazorWebSSD
                 };
 
                 process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
-                    return process.StandardOutput.ReadToEnd();
+                    return output;
                 else
-                    Console.Error.WriteLine($"Команда '{command} {args}' завершилась с ошибкой: {process.StandardError.ReadToEnd()}");
+                {
+                    Console.Error.WriteLine($"Command failed: {command} {args}\nError: {error}");
+                    return null;
+                }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Исключение при запуске '{command}': {ex.Message}");
+                Console.Error.WriteLine($"Exception in RunCommand: {ex.Message}");
+                return null;
             }
-            return null;
+        }
+        /// <summary>
+        /// Возвращает строковое представление раздела для отладки.
+        /// </summary>
+        public override string ToString()
+        {
+            string sizeGb = (SizeBytes / (1024.0 * 1024 * 1024)).ToString("F2");
+            string usedGb = (UsedBytes / (1024.0 * 1024 * 1024)).ToString("F2");
+
+            return $"/dev/{DeviceName} | FS: {FileSystemType} | Size: {sizeGb} GB | Used: {usedGb} GB | Mount: {MountPoint}";
         }
     }
 
@@ -180,9 +287,10 @@ namespace BlazorWebSSD
         /// </summary>
         public static List<DiskInfo>? GetDisks()
         {
-            List<DiskInfo>  disks=new List<DiskInfo>();
+            List<DiskInfo> disks = new List<DiskInfo>();
 
-            var lsblkJson = RunCommand("lsblk", "-J -b -o NAME,SIZE,TYPE,MOUNTPOINT");
+            // Добавлено FSTYPE в вывод
+            var lsblkJson = RunCommand("lsblk", "-J -b -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE");
             if (string.IsNullOrEmpty(lsblkJson)) return null;
 
             using var doc = JsonDocument.Parse(lsblkJson);
@@ -219,14 +327,20 @@ namespace BlazorWebSSD
                             var partSize = pSizeEl.GetInt64();
                             var mountPoint = part.TryGetProperty("mountpoint", out var mp) ? mp.GetString() : "-";
                             if (mountPoint == null) mountPoint = "-";
+
+                            // === НОВОЕ: чтение типа файловой системы ===
+                            var fsType = part.TryGetProperty("fstype", out var fs) ? fs.GetString() : "—";
+                            if (string.IsNullOrEmpty(fsType)) fsType = "—";
+
                             var partition = new PartitionInfo
                             {
                                 DeviceName = partName!,
                                 SizeBytes = partSize,
-                                MountPoint = mountPoint
+                                MountPoint = mountPoint,
+                                FileSystemType = fsType!
                             };
 
-                            if (!string.IsNullOrEmpty(mountPoint) && mountPoint!="-")
+                            if (!string.IsNullOrEmpty(mountPoint) && mountPoint != "-")
                             {
                                 var dfOutput = RunCommand("df", $"--output=used {mountPoint} -B1");
                                 if (!string.IsNullOrEmpty(dfOutput))
