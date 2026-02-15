@@ -17,7 +17,7 @@ namespace BlazorWebSSD
     {
         private const string SmbConfPath = "/etc/samba/smb.conf";
 
-        // 1. Получить список папок с шарингом
+        // Получить список папок с шарингом
         public static List<SambaShareInfo> GetShares()
         {
             if (!File.Exists(SmbConfPath))
@@ -77,7 +77,7 @@ namespace BlazorWebSSD
             return shares;
         }
 
-        // 2. Получить пользователей и их права для конкретной папки
+        // Получить пользователей и их права для конкретной папки
         public static (List<string> readUsers, List<string> writeUsers) GetShareUsers(string shareName)
         {
             // В стандартной Samba нет прямого способа хранить per-user права в smb.conf.
@@ -134,9 +134,11 @@ namespace BlazorWebSSD
             }
         }
 
-        // 3. Удалить все папки из шаринга (оставить только [global])
+        // Удалить все папки из шаринга (оставить только [global])
         public static void RemoveAllShares()
         {
+            Console.WriteLine("Remove all shares");
+
             var lines = File.ReadAllLines(SmbConfPath).ToList();
             var newLines = new List<string>();
             bool inGlobal = false;
@@ -165,20 +167,23 @@ namespace BlazorWebSSD
             ReloadSamba();
         }
 
-        // 4. Добавить папку в шаринг
+        // Добавить папку в шаринг
         public static void AddShare(string shareName, string path, List<string> users, bool readOnly = false)
         {
-            Console.Write("Add share " + shareName + " to path " + path + " for ");
-            foreach (var user in users)
-                Console.Write(user + " ");
-            Console.WriteLine();
+            // Привести путь к абсолютному
+            path = Path.GetFullPath(path);
+
+            Console.Write($"Add share '{shareName}' to path '{path}' for users: ");
+            Console.WriteLine(string.Join(", ", users));
+
+            // Создать папку, если её нет
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-                Console.WriteLine($"Path does not exist: {path}, create path");
+                Console.WriteLine($"Path did not exist; created: {path}");
             }
 
-            EnsureGlobalSection(); // ← гарантирует наличие [global] с security = user
+            EnsureGlobalSection();
 
             var sambaUsers = GetAllSambaUsers();
             foreach (var user in users)
@@ -187,11 +192,59 @@ namespace BlazorWebSSD
                     throw new ArgumentException($"User '{user}' is not a Samba user. Add with 'smbpasswd -a {user}'.");
             }
 
+            // === 1. Создать уникальное имя группы для этой шары ===
+            string groupName = $"smb_share_{shareName}";
+            groupName = Regex.Replace(groupName, @"[^a-zA-Z0-9_]", "_"); // безопасное имя
+
+            // === 2. Проверить, существует ли группа ===
+            bool groupExists = false;
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "getent",
+                    Arguments = $"group {groupName}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var proc = Process.Start(psi);
+                proc?.WaitForExit();
+                groupExists = (proc?.ExitCode == 0);
+            }
+            catch
+            {
+                groupExists = false;
+            }
+
+            if (!groupExists)
+            {
+                Console.WriteLine($"Creating group '{groupName}'...");
+                RunCommand("groupadd", groupName); // ← без sudo
+            }
+            else
+            {
+                Console.WriteLine($"Group '{groupName}' already exists.");
+            }
+
+            // === 3. Добавить всех пользователей в группу ===
+            foreach (var user in users)
+            {
+                Console.WriteLine($"Adding user '{user}' to group '{groupName}'...");
+                RunCommand("usermod", $"-aG {groupName} {user}"); // ← без sudo
+            }
+
+            // === 4. Назначить группу владельцем папки и установить права ===
+            Console.WriteLine($"Setting ownership and permissions for '{path}'...");
+            RunCommand("chgrp", $"-R {groupName} \"{path}\""); // ← без sudo
+            RunCommand("chmod", $"-R 775 \"{path}\"");         // ← без sudo
+            RunCommand("chmod", $"g+s \"{path}\"");            // setgid: новые файлы наследуют группу
+
+            // === 5. Формируем valid users ===
             var validUsers = string.Join(",", users);
 
-            // Даем права на папку (для теста — 777)
-            RunCommand("sudo", $"chmod 777 \"{path}\"");
-
+            // === 6. Добавляем секцию в smb.conf ===
             var shareSection = $@"
 [{shareName}]
     path = {path}
@@ -201,11 +254,14 @@ namespace BlazorWebSSD
     read only = {(readOnly ? "yes" : "no")}
     create mask = 0664
     directory mask = 0775
+    force group = {groupName}
     guest ok = no
 ";
 
             File.AppendAllText(SmbConfPath, shareSection);
             ReloadSamba();
+
+            Console.WriteLine($"Share '{shareName}' added successfully with group '{groupName}'.");
         }
 
         private static void ReloadSamba()
@@ -214,8 +270,8 @@ namespace BlazorWebSSD
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "sudo",
-                    Arguments = "systemctl reload smbd nmbd",
+                    FileName = "systemctl", // ← без sudo
+                    Arguments = "reload smbd nmbd",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -226,10 +282,9 @@ namespace BlazorWebSSD
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Cannot reload Samba. Ensure sudo permissions or run as root.", ex);
+                throw new InvalidOperationException("Cannot reload Samba. Ensure it's installed and running.", ex);
             }
-        }
-        // Получить список всех пользователей Samba
+        }        // Получить список всех пользователей Samba
         public static List<string> GetSambaUsers()
         {
             try
