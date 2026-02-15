@@ -5,15 +5,23 @@
 
 <div class="border border-dark bg-light p-2 mb-2">
     <div class="row g-2">
-        <div class="col text-center">@Model</div>
-        <div class="col text-center">@DiskName</div>
-        <div class="col text-center">@Size</div>
+        <div class="col text-center">
+            <div style="text-align: left;">Model: @Model</div>
+            <div style="text-align: left;">Serial: @Serial</div>
+            <div style="text-align: left;">Name: @DiskName</div>
+            <div style="text-align: left;">Size: @Size</div>
+        </div>
         <div class="col text-center">@State</div>
         <div class="col text-center">
-            <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
-        </div>
-        <div class="col text-center">
-            <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
+            <div style="text-align: right;">
+                <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
+            </div>
+            <div style="text-align: right;">
+                <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
+            </div>
+            <div style="text-align: right;">
+                <button class="btn btn-sm btn-outline-primary" >Форматировать</button>
+            </div>
         </div>
     </div>
 </div>
@@ -23,6 +31,8 @@
     public string Model { get; set; } = "SSD123";
     [Parameter]
     public string DiskName { get; set; } = "sda1";
+    [Parameter]
+    public string Serial { get; set; } = "S12345678";
     [Parameter]
     public string Size { get; set; } = "12.0/123.0 GB";
     [Parameter]

@@ -37,6 +37,7 @@ else
                 if (type == 2)
                     state = "Shared";
                 <PartitionRow Model="@disk.Model.ToString()"
+                              Serial="@disk.Serial"
                               DiskName=@part.DeviceName
                               Size="@((part.UsedBytes / 1073741824.0).ToString("0.0") + "/" + (part.SizeBytes / 1073741824.0).ToString("0.0"))"
                               State="@state"
