@@ -3,19 +3,23 @@
 @rendermode InteractiveServer
 @inject NasService NasService
 
-<button @onclick="MountAll">Mount All</button>
-<button @onclick="UnMountAll">Unmount All</button>
+
+<h3>Mount</h3>
+<button @onclick="NasService.MountAllDisks">Mount All</button>
+<button @onclick="NasService.MountAllShare">Mount All Shared</button>
+<button @onclick="NasService.MountAllBackUp">Mount All BackUp</button>
+
+<button @onclick="NasService.UnmountAll">Unmount All</button>
+<button @onclick="NasService.UnmountAllShared">Unmount All Shared</button>
+<button @onclick="NasService.UnmountAllBackUp">Unmount All BackUp</button>
+
+<hr />
+
+<h3>Samba</h3>
+
 
 @code {
     protected override async Task OnInitializedAsync()
     {
-    }
-    private void MountAll()
-    {
-        NasService.MountAllDisks();
-    }
-    private void UnMountAll()
-    {
-        NasService.UnmountAll();
     }
 }

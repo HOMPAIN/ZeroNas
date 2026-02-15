@@ -64,6 +64,40 @@ namespace BlazorWebSSD
             }
 
         }
+        //смонтировать все диски для сетевых папок
+        public void MountAllShare()
+        {
+            List<DiskInfo>? disks = DiskManager.GetDisks();
+            if (disks == null) return;
+            //диски для шаринга
+            for (int i = 0; i < DisksConfig.IDShare.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDShare[i]) continue;
+                    disk.Partitions[0].Mount("DiskShare" + i);
+                }
+            }
+        }
+        //смонтировать все диски для бэкапа
+        public void MountAllBackUp()
+        {
+            List<DiskInfo>? disks = DiskManager.GetDisks();
+            if (disks == null) return;
+            //диски для бэкапа
+            for (int i = 0; i < DisksConfig.IDBackup.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDBackup[i]) continue;
+                    disk.Partitions[0].Mount("DiskBackUp" + i);
+                }
+            }
+        }
         //размантировать все сконфигурированные диски 
         public void UnmountAll()
         {
@@ -80,6 +114,40 @@ namespace BlazorWebSSD
                     disk.Partitions[0].Unmount();
                 }
             }
+            //диски для бэкапа
+            for (int i = 0; i < DisksConfig.IDBackup.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDBackup[i]) continue;
+                    disk.Partitions[0].Unmount();
+                }
+            }
+        }
+        //размонтировать все тетевые папки
+        public void UnmountAllShared()
+        {
+            List<DiskInfo>? disks = DiskManager.GetDisks();
+            if (disks == null) return;
+            //диски для шаринга
+            for (int i = 0; i < DisksConfig.IDShare.Count; i++)
+            {
+                foreach (DiskInfo disk in disks)
+                {
+                    if (disk.Partitions == null) continue;
+                    if (disk.Partitions.Count != 1) continue;
+                    if (disk.Serial != DisksConfig.IDShare[i]) continue;
+                    disk.Partitions[0].Unmount();
+                }
+            }
+        }
+        //размонтировать все папки для бэкапа
+        public void UnmountAllBackUp()
+        {
+            List<DiskInfo>? disks = DiskManager.GetDisks();
+            if (disks == null) return;
             //диски для бэкапа
             for (int i = 0; i < DisksConfig.IDBackup.Count; i++)
             {
