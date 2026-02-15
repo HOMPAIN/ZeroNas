@@ -5,13 +5,30 @@
 
 <div class="border border-dark bg-light p-2 mb-2">
     <div class="row g-2">
+        @*диск*@
         <div class="col text-center">
-            <div style="text-align: left;">Model: @Model</div>
-            <div style="text-align: left;">Serial: @Serial</div>
-            <div style="text-align: left;">Name: @DiskName</div>
-            <div style="text-align: left;">Size: @Size</div>
+            <div style="text-align: left;">Model: @(Disk?.Model ?? "-")</div>
+            <div style="text-align: left;">Serial: @(Disk?.Serial ?? "-")</div>
+            <div style="text-align: left;">Name: @(Disk?.DeviceName ?? "-")</div>
+            <div style="text-align: left;">Size: @GetDiskSize()</div>
         </div>
-        <div class="col text-center">@State</div>
+        @*разделы*@
+        <div class="col text-center">
+            @if (Disk != null)
+            {
+                @foreach (var part in Disk.Partitions)
+                {
+                    <div style="text-align: left;">@part.ToString()</div>
+                }
+
+                <div style="text-align: left;">
+                    @State
+                    <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
+                    <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="(()=>Disk.Partitions[0].FormatAsExt4())">Форматировать</button>
+                </div>
+            }
+        </div>
         <div class="col text-center">
             <div style="text-align: right;">
                 <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
@@ -73,5 +90,14 @@
             Console.WriteLine("Добавляем диск " + Disk.Serial);
             DisksConfig.AddDisk(Disk.Serial, 1);
         }
+    }
+    //получить строку размера диска
+    private string GetDiskSize()
+    {
+        if (Disk == null)
+            return "-";
+        string sizeGb = (Disk.DeviceSizeBytes / (1024.0 * 1024 * 1024)).ToString("F2");
+        //string usedGb = (0 / (1024.0 * 1024 * 1024)).ToString("F2");
+        return sizeGb + " GB";
     }
 }

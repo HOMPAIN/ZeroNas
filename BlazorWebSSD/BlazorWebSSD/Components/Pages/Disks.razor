@@ -54,6 +54,14 @@ else
     protected override async Task OnInitializedAsync()
     {
         Disks_ = await DiskManager.GetDisksAsync();
+        foreach (var disk in Disks_!)
+        {
+            foreach (var part in disk.Partitions)
+            {
+                Console.WriteLine("-------");
+                Console.WriteLine(part.ToString());
+            }
+        }
     }
 
     private async Task ReloadPage()
