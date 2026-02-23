@@ -56,11 +56,16 @@ else
 
     private List<string> SambaUsers = null;
     private List<UserEntry>? Users_ = null;
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        Users_=UsersManager.GetAllUsersWithGroups();
-        SambaUsers = SambaManager.GetSambaUsers();
-        isProcessing = false;
+        try
+        {
+            Users_ = UsersManager.GetAllUsersWithGroups();
+            SambaUsers = SambaManager.GetSambaUsers();
+        }finally
+        {
+            isProcessing = false;
+        }
     }
     private async Task Reload()
     {
