@@ -3,24 +3,40 @@
 @rendermode InteractiveServer
 @inject NasService NasService
 
-
 <h3>Mount</h3>
-<button @onclick="NasService.MountAllDisks">Mount All</button>
-<button @onclick="NasService.MountAllShare">Mount All Shared</button>
-<button @onclick="NasService.MountAllBackUp">Mount All BackUp</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.MountAllDisks)" disabled="@Disabled">Mount All</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.MountAllShare)" disabled="@Disabled">Mount All Shared</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.MountAllBackUp)" disabled="@Disabled">Mount All BackUp</button>
 <hr />
-<button @onclick="NasService.UnmountAll">Unmount All</button>
-<button @onclick="NasService.UnmountAllShared">Unmount All Shared</button>
-<button @onclick="NasService.UnmountAllBackUp">Unmount All BackUp</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.UnmountAll)" disabled="@Disabled">Unmount All</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.UnmountAllShared)" disabled="@Disabled">Unmount All Shared</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.UnmountAllBackUp)" disabled="@Disabled">Unmount All BackUp</button>
 
 <hr />
 
 <h3>Samba</h3>
-<button @onclick="NasService.SambaShareAll">Samba All</button>
-<button @onclick="NasService.UnSambaShareAll">UnSamba All</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.SambaShareAll)" disabled="@Disabled">Samba All</button>
+<button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.UnSambaShareAll)" disabled="@Disabled">UnSamba All</button>
 
 @code {
-    protected override async Task OnInitializedAsync()
+    private bool Disabled = false;
+    protected override void OnInitialized()
     {
+    }
+    private async Task ClickAction( Action _Action)
+    {
+        if (Disabled) return;
+        Disabled = true;
+        StateHasChanged();
+        //await Task.Delay(1000);
+        try
+        {
+            await Task.Run(_Action); // синхронный вызов
+        }
+        finally
+        {
+            Disabled = false;
+            StateHasChanged();
+        }
     }
 }
