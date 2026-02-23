@@ -9,6 +9,8 @@ namespace BlazorWebSSD
         DisksConfig DisksConfig;
         SharedFoldersConfig SharedFoldersConfig;
 
+        public string MountPoint="/mnt";//каталог для монтирования дисков
+
         public NasService(MyServer worker, DisksConfig _DC, SharedFoldersConfig _SFC)
         {
             _worker = worker;
@@ -48,7 +50,8 @@ namespace BlazorWebSSD
                     if (disk.Partitions == null) continue;
                     if (disk.Partitions.Count != 1)  continue;
                     if (disk.Serial != DisksConfig.IDShare[i]) continue;
-                        disk.Partitions[0].Mount("DiskShare"+i);
+                    string path = Path.Combine(MountPoint, "DiskShare" + i);
+                    disk.Partitions[0].Mount(path);
                 }
             }
             //диски для бэкапа
@@ -59,7 +62,8 @@ namespace BlazorWebSSD
                     if (disk.Partitions == null) continue;
                     if (disk.Partitions.Count != 1) continue;
                     if (disk.Serial != DisksConfig.IDBackup[i]) continue;
-                    disk.Partitions[0].Mount("DiskBackUp" + i);
+                    string path = Path.Combine(MountPoint, "DiskBackUp" + i);
+                    disk.Partitions[0].Mount(path);
                 }
             }
 
@@ -77,7 +81,8 @@ namespace BlazorWebSSD
                     if (disk.Partitions == null) continue;
                     if (disk.Partitions.Count != 1) continue;
                     if (disk.Serial != DisksConfig.IDShare[i]) continue;
-                    disk.Partitions[0].Mount("DiskShare" + i);
+                    string path = Path.Combine(MountPoint, "DiskShare" + i);
+                    disk.Partitions[0].Mount(path);
                 }
             }
         }
@@ -94,7 +99,8 @@ namespace BlazorWebSSD
                     if (disk.Partitions == null) continue;
                     if (disk.Partitions.Count != 1) continue;
                     if (disk.Serial != DisksConfig.IDBackup[i]) continue;
-                    disk.Partitions[0].Mount("DiskBackUp" + i);
+                    string path = Path.Combine(MountPoint, "DiskBackUp" + i);
+                    disk.Partitions[0].Mount(path);
                 }
             }
         }
@@ -175,7 +181,7 @@ namespace BlazorWebSSD
                 {
                     if (DisksConfig.IDShare[i] == share.MainDisk)
                     {
-                        string path = "DiskShare" + i + "/" + share.Folder;
+                        string path = Path.Combine(MountPoint,"DiskShare" + i , share.Folder);
                         //расшариваем папку
                         SambaManager.AddShare(share.Folder, path, share.UsersRW);
                         break;
