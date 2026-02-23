@@ -23,7 +23,7 @@ namespace BlazorWebSSD
             {
                 while (!_cts.Token.IsCancellationRequested)
                 {
-                    Task.Delay(5000, _cts.Token);
+                    await Task.Delay(5000, _cts.Token);
                     /*try
                     {
                         // Ваша фоновая логика здесь

@@ -12,7 +12,8 @@ builder.Services.AddSingleton<MyServer>();
 builder.Services.AddSingleton<NasService>();
 
 // Регистрация фоновой службы
-builder.Services.AddHostedService<NasService>();
+//builder.Services.AddHostedService<NasService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<NasService>());
 
 var app = builder.Build();
 
