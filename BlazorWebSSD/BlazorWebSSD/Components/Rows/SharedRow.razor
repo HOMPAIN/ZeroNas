@@ -32,23 +32,25 @@
                 <!-- Список пользователей -->
             @for (int i = 0; i < Folder.UsersRW.Count; i++)
             {
+                int index_rw = i;
                 <div class="d-flex align-items-center mb-2">
                     <div class="flex-grow-1 me-2 text-start">
                         @("RW " + Folder.UsersRW[i])
                     </div>
                     <div>
-                        <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserRW(Folder.UsersRW[i])">Ударить</button>
+                        <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserRW(index_rw)">Ударить</button>
                     </div>
                 </div>
             }
             @for (int i = 0; i < Folder.UsersR.Count; i++)
             {
+                int index_r = i;
                 <div class="d-flex align-items-center mb-2">
                     <div class="flex-grow-1 me-2 text-start">
                         @("R  " + Folder.UsersR[i])
                     </div>
                     <div>
-                        <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserR(Folder.UsersR[i])">Ударить</button>
+                            <button class="btn btn-primary" style="width: 100px;" @onclick="() => DeleteUserR(index_r)">Ударить</button>
                     </div>
                 </div>
             }
@@ -83,14 +85,15 @@
             Folder.UsersR.Add(SelectedValue);
         SharedFoldersConfig.AddUpdateFolder(Folder);
     }
-    private void DeleteUserRW(string _User)
+    private void DeleteUserRW(int _I)
     {
-        Folder.UsersRW.Remove(_User);
+        Folder.UsersRW.RemoveAt(_I);
         SharedFoldersConfig.AddUpdateFolder(Folder);
     }
-    private void DeleteUserR(string _User)
+    private void DeleteUserR(int _I)
     {
-        Folder.UsersR.Remove(_User);
+        Console.WriteLine(""+_I);
+        Folder.UsersR.RemoveAt(_I);
         SharedFoldersConfig.AddUpdateFolder(Folder);
     }
     //удадение папки
