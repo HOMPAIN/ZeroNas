@@ -1,7 +1,8 @@
 ﻿@page "/weather"
 @*@attribute [StreamRendering]*@
-@rendermode InteractiveServer
 @inject NasService NasService
+@inject LedMaster LedMaster
+@rendermode InteractiveServer
 
 <h3>Mount</h3>
 <button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.MountAllDisks)" disabled="@Disabled">Mount All</button>
@@ -17,6 +18,22 @@
 <h3>Samba</h3>
 <button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.SambaShareAll)" disabled="@Disabled">Samba All</button>
 <button class="btn btn-primary mb-3" @onclick="() => ClickAction(NasService.UnSambaShareAll)" disabled="@Disabled">UnSamba All</button>
+
+<hr />
+<h3>Led</h3>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.GreenConst)" disabled="@Disabled">Green const</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.GreenSlowBlink)" disabled="@Disabled">Green slow</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.GreenFastBlink)" disabled="@Disabled">Green fast</button>
+
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.OrangeConst)" disabled="@Disabled">Orange const</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.OrangeSlowBlink)" disabled="@Disabled">Orange slow</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.OrangeFastBlink)" disabled="@Disabled">Orange fast</button>
+
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.RedConst)" disabled="@Disabled">Red const</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.RedSlowBlink)" disabled="@Disabled">Red slow</button>
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.RedFastBlink)" disabled="@Disabled">Red fast</button>
+
+<button class="btn btn-primary mb-3" @onclick="() => LedMaster.SetState(LedState.Off)" disabled="@Disabled">Off</button>
 
 @code {
     private bool Disabled = false;

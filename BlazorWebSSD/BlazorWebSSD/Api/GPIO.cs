@@ -47,7 +47,7 @@ namespace BlazorWebSSD
         /// <param name="value">Значение: HIGH (1) или LOW (0)</param>
         public static void digitalWrite(int pinNumber, int value)
         {
-            Console.WriteLine("Pin:"+pinNumber +" Val:"+value);
+            //Console.WriteLine("Pin:"+pinNumber +" Val:"+value);
             try
             {
                 string valuePath = Path.Combine($"{_gpioBasePath}/gpio{pinNumber}", "value");

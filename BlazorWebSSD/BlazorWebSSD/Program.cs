@@ -10,10 +10,12 @@ builder.Services.AddSingleton<DisksConfig>();
 builder.Services.AddSingleton<SharedFoldersConfig>();
 builder.Services.AddSingleton<MyServer>();
 builder.Services.AddSingleton<NasService>();
+builder.Services.AddSingleton<LedMaster>();
 
 // Регистрация фоновой службы
 //builder.Services.AddHostedService<NasService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<NasService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<LedMaster>());
 
 var app = builder.Build();
 
