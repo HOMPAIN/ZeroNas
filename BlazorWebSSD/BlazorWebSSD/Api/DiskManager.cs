@@ -197,7 +197,7 @@ namespace BlazorWebSSD
         public bool FormatAsExt4(string? label = null) => Format("ext4", label);
 
         // Вспомогательный метод для запуска команд (локальная копия из DiskManager или общий)
-        private static string? RunCommand(string command, string args)
+        public static string? RunCommand(string command, string args)
         {
             try
             {
@@ -265,6 +265,153 @@ namespace BlazorWebSSD
 
         /// <summary>Список разделов, принадлежащих этому диску.</summary>
         public List<PartitionInfo> Partitions { get; set; } = new();
+
+        /// <summary>
+        /// Переводит физический диск в режим сна (standby) через hdparm -y.
+        /// Работает только с HDD; для SSD команда игнорируется или может вызвать ошибку.
+        /// </summary>
+        /// <returns>true, если команда выполнена успешно; иначе false.</returns>
+        public bool Sleep()
+        {
+            Console.WriteLine($"Sending standby command to /dev/{DeviceName}...");
+
+            try
+            {
+                // hdparm работает с устройством, а не разделом: /dev/sdb, не /dev/sdb1
+                var result = PartitionInfo.RunCommand("hdparm", $"-y /dev/{DeviceName}");
+                if (result != null)
+                {
+                    Console.WriteLine($"Standby command sent to /dev/{DeviceName}");
+                    return true;
+                }
+                else
+                {
+                    Console.Error.WriteLine($"Failed to send standby command to /dev/{DeviceName}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in Sleep(): {ex.Message}");
+                return false;
+            }
+        }
+        /// <summary>
+        /// Форматирует ВЕСЬ диск: удаляет таблицу разделов, создаёт один раздел на всё пространство
+        /// и форматирует его в указанную файловую систему.
+        /// ⚠️ ВНИМАНИЕ: Все данные на диске будут безвозвратно удалены!
+        /// </summary>
+        /// <param name="fileSystemType">Тип ФС: "ext4", "exfat", "ntfs".</param>
+        /// <param name="label">Метка тома (опционально).</param>
+        /// <returns>true, если операция успешна; иначе false.</returns>
+        public bool FormatWholeDisk(string fileSystemType, string? label = null)
+        {
+            if (string.IsNullOrWhiteSpace(fileSystemType))
+                throw new ArgumentException("File system type cannot be null or empty.", nameof(fileSystemType));
+
+            fileSystemType = fileSystemType.ToLowerInvariant();
+            if (fileSystemType != "ext4" && fileSystemType != "exfat" && fileSystemType != "ntfs")
+                throw new NotSupportedException($"Unsupported file system type: {fileSystemType}");
+
+            Console.WriteLine($"⚠️ Formatting ENTIRE disk /dev/{DeviceName} as {fileSystemType}...");
+            Console.WriteLine($"⚠️ ALL DATA WILL BE LOST!");
+
+            var devicePath = $"/dev/{DeviceName}";
+
+            // 1. Размонтируем все разделы диска
+            Console.WriteLine("Unmounting all partitions...");
+            foreach (var partition in Partitions)
+            {
+                partition.Unmount();
+            }
+
+            // Небольшая пауза, чтобы система освободила устройство
+            Thread.Sleep(500);
+
+            // 2. Удаляем таблицу разделов и создаём новую (msdos) с одним разделом
+            Console.WriteLine("Creating new partition table and single partition...");
+
+            // Используем parted в скриптовом режиме
+            // mklabel msdos — таблица разделов MBR (совместима со всем)
+            // mkpart primary ext4 0% 100% — один раздел на весь диск
+            var partedArgs = $"-s {devicePath} mklabel msdos mkpart primary {fileSystemType} 0% 100%";
+            var partedResult = PartitionInfo.RunCommand("parted", partedArgs);
+
+            if (partedResult == null)
+            {
+                Console.Error.WriteLine("Failed to create partition table.");
+                return false;
+            }
+
+            // Ждём, пока ядро обновит информацию о разделах
+            Thread.Sleep(1000);
+
+            // Принудительно обновляем таблицу разделов ядра (если есть partprobe)
+            PartitionInfo.RunCommand("partprobe", devicePath);
+            Thread.Sleep(500);
+
+            // 3. Форматируем созданный раздел (первый: /dev/sdb1)
+            // Имя раздела: имя диска + "1" (для sda → sda1, для mmcblk0 → mmcblk0p1)
+            var partitionName = DeviceName.EndsWith("0", StringComparison.Ordinal) && DeviceName.StartsWith("mmcblk", StringComparison.Ordinal)
+                ? $"{DeviceName}p1"  // mmcblk0 → mmcblk0p1
+                : $"{DeviceName}1";   // sda → sda1
+
+            var partitionPath = $"/dev/{partitionName}";
+            Console.WriteLine($"Formatting partition {partitionPath} as {fileSystemType}...");
+
+            string command;
+            string args;
+
+            switch (fileSystemType)
+            {
+                case "ext4":
+                    command = "mkfs.ext4";
+                    args = $"-F {partitionPath}";
+                    if (!string.IsNullOrEmpty(label)) args += $" -L \"{label}\"";
+                    break;
+                case "exfat":
+                    command = "mkfs.exfat";
+                    args = $"{partitionPath}";
+                    if (!string.IsNullOrEmpty(label)) args += $" -n \"{label}\"";
+                    break;
+                case "ntfs":
+                    command = "mkfs.ntfs";
+                    args = $"-f {partitionPath}";
+                    if (!string.IsNullOrEmpty(label)) args += $" -L \"{label}\"";
+                    break;
+                default:
+                    return false;
+            }
+
+            try
+            {
+                var formatResult = PartitionInfo.RunCommand(command, args);
+                if (formatResult != null)
+                {
+                    Console.WriteLine($"✅ Successfully formatted {partitionPath} as {fileSystemType}.");
+                    // Обновляем информацию о разделах в объекте
+                    Partitions.Clear();
+                    Partitions.Add(new PartitionInfo
+                    {
+                        DeviceName = partitionName,
+                        SizeBytes = DeviceSizeBytes,
+                        FileSystemType = fileSystemType,
+                        MountPoint = "-"
+                    });
+                    return true;
+                }
+                else
+                {
+                    Console.Error.WriteLine($"❌ Failed to format {partitionPath}.");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception during formatting: {ex.Message}");
+                return false;
+            }
+        }
     }
 
     /// <summary>
