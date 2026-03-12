@@ -50,7 +50,7 @@ namespace BlazorWebSSD
 
                 // Выполняем mount /dev/DEVICE PATH
                 var devicePath = $"/dev/{DeviceName}";
-                var result = RunCommand("mount", $"{devicePath} {mountPath}");
+                var result = LinuxCommand.Run("mount", $"{devicePath} {mountPath}");
                 if (result != null)
                 {
                     if (mountPath == null) mountPath = "-";
@@ -77,7 +77,7 @@ namespace BlazorWebSSD
             // Если MountPoint не задан — попробуем найти через findmnt
             if (string.IsNullOrEmpty(target) || target == "—")
             {
-                var findmntOut = RunCommand("findmnt", $"-n -o TARGET --source /dev/{DeviceName}");
+                var findmntOut = LinuxCommand.Run("findmnt", $"-n -o TARGET --source /dev/{DeviceName}");
                 if (!string.IsNullOrEmpty(findmntOut))
                 {
                     target = findmntOut.Trim();
@@ -92,7 +92,7 @@ namespace BlazorWebSSD
 
             try
             {
-                var result = RunCommand("umount", target);
+                var result = LinuxCommand.Run("umount", target);
                 if (result != null)
                 {
                     MountPoint = "-";
@@ -172,7 +172,7 @@ namespace BlazorWebSSD
             // 3. Выполняем форматирование
             try
             {
-                var result = RunCommand(command, args);
+                var result = LinuxCommand.Run(command, args);
                 if (result != null)
                 {
                     Console.WriteLine($"Successfully formatted /dev/{DeviceName} as {fileSystemType}.");
@@ -196,43 +196,6 @@ namespace BlazorWebSSD
         /// </summary>
         public bool FormatAsExt4(string? label = null) => Format("ext4", label);
 
-        // Вспомогательный метод для запуска команд (локальная копия из DiskManager или общий)
-        public static string? RunCommand(string command, string args)
-        {
-            try
-            {
-                using var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = command,
-                        Arguments = args,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-
-                if (process.ExitCode == 0)
-                    return output;
-                else
-                {
-                    Console.Error.WriteLine($"Command failed: {command} {args}\nError: {error}");
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Exception in RunCommand: {ex.Message}");
-                return null;
-            }
-        }
         /// <summary>
         /// Возвращает строковое представление раздела для отладки.
         /// </summary>
@@ -278,7 +241,7 @@ namespace BlazorWebSSD
             try
             {
                 // hdparm работает с устройством, а не разделом: /dev/sdb, не /dev/sdb1
-                var result = PartitionInfo.RunCommand("hdparm", $"-y /dev/{DeviceName}");
+                var result = LinuxCommand.Run("hdparm", $"-y /dev/{DeviceName}");
                 if (result != null)
                 {
                     Console.WriteLine($"Standby command sent to /dev/{DeviceName}");
@@ -335,7 +298,7 @@ namespace BlazorWebSSD
             // mklabel msdos — таблица разделов MBR (совместима со всем)
             // mkpart primary ext4 0% 100% — один раздел на весь диск
             var partedArgs = $"-s {devicePath} mklabel msdos mkpart primary {fileSystemType} 0% 100%";
-            var partedResult = PartitionInfo.RunCommand("parted", partedArgs);
+            var partedResult = LinuxCommand.Run("parted", partedArgs);
 
             if (partedResult == null)
             {
@@ -347,7 +310,7 @@ namespace BlazorWebSSD
             Thread.Sleep(1000);
 
             // Принудительно обновляем таблицу разделов ядра (если есть partprobe)
-            PartitionInfo.RunCommand("partprobe", devicePath);
+            LinuxCommand.Run("partprobe", devicePath);
             Thread.Sleep(500);
 
             // 3. Форматируем созданный раздел (первый: /dev/sdb1)
@@ -385,7 +348,7 @@ namespace BlazorWebSSD
 
             try
             {
-                var formatResult = PartitionInfo.RunCommand(command, args);
+                var formatResult = LinuxCommand.Run(command, args);
                 if (formatResult != null)
                 {
                     Console.WriteLine($"✅ Successfully formatted {partitionPath} as {fileSystemType}.");
@@ -437,7 +400,7 @@ namespace BlazorWebSSD
             List<DiskInfo> disks = new List<DiskInfo>();
 
             // Добавлено FSTYPE в вывод
-            var lsblkJson = RunCommand("lsblk", "-J -b -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE");
+            var lsblkJson = LinuxCommand.Run("lsblk", "-J -b -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE");
             if (string.IsNullOrEmpty(lsblkJson)) return null;
 
             using var doc = JsonDocument.Parse(lsblkJson);
@@ -489,7 +452,7 @@ namespace BlazorWebSSD
 
                             if (!string.IsNullOrEmpty(mountPoint) && mountPoint != "-")
                             {
-                                var dfOutput = RunCommand("df", $"--output=used {mountPoint} -B1");
+                                var dfOutput = LinuxCommand.Run("df", $"--output=used {mountPoint} -B1");
                                 if (!string.IsNullOrEmpty(dfOutput))
                                 {
                                     var lines = dfOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
@@ -508,40 +471,6 @@ namespace BlazorWebSSD
                 }
             }
             return disks;
-        }
-
-        /// <summary>
-        /// Выполняет указанную системную команду с аргументами и возвращает её stdout,
-        /// если команда завершилась успешно. В противном случае — null.
-        /// </summary>
-        /// <param name="command">Имя исполняемого файла (например, "lsblk").</param>
-        /// <param name="args">Аргументы команды.</param>
-        /// <returns>Вывод команды или null при ошибке.</returns>
-        private static string? RunCommand(string command, string args)
-        {
-            try
-            {
-                using var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = command,
-                        Arguments = args,
-                        RedirectStandardOutput = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-                return process.ExitCode == 0 ? output : null;
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         /// <summary>
@@ -578,7 +507,7 @@ namespace BlazorWebSSD
         /// <returns>Серийный номер или "—" если недоступен.</returns>
         private static string ReadDeviceSerial(string deviceName)
         {
-            var output = RunCommand("udevadm", $"info --name=/dev/{deviceName} --query=property");
+            var output = LinuxCommand.Run("udevadm", $"info --name=/dev/{deviceName} --query=property");
             if (string.IsNullOrEmpty(output)) return "—";
 
             foreach (var line in output.Split('\n'))

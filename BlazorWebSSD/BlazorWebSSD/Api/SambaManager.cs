@@ -221,7 +221,7 @@ namespace BlazorWebSSD
             if (!groupExists)
             {
                 Console.WriteLine($"Creating group '{groupName}'...");
-                RunCommand("groupadd", groupName); // ← без sudo
+                LinuxCommand.Run("groupadd", groupName); // ← без sudo
             }
             else
             {
@@ -232,14 +232,14 @@ namespace BlazorWebSSD
             foreach (var user in users)
             {
                 Console.WriteLine($"Adding user '{user}' to group '{groupName}'...");
-                RunCommand("usermod", $"-aG {groupName} {user}"); // ← без sudo
+                LinuxCommand.Run("usermod", $"-aG {groupName} {user}"); // ← без sudo
             }
 
             // === 4. Назначить группу владельцем папки и установить права ===
             Console.WriteLine($"Setting ownership and permissions for '{path}'...");
-            RunCommand("chgrp", $"-R {groupName} \"{path}\""); // ← без sudo
-            RunCommand("chmod", $"-R 775 \"{path}\"");         // ← без sudo
-            RunCommand("chmod", $"g+s \"{path}\"");            // setgid: новые файлы наследуют группу
+            LinuxCommand.Run("chgrp", $"-R {groupName} \"{path}\""); // ← без sudo
+            LinuxCommand.Run("chmod", $"-R 775 \"{path}\"");         // ← без sudo
+            LinuxCommand.Run("chmod", $"g+s \"{path}\"");            // setgid: новые файлы наследуют группу
 
             // === 5. Формируем valid users ===
             var validUsers = string.Join(",", users);
@@ -326,19 +326,19 @@ namespace BlazorWebSSD
 
             // 1. Создать системного пользователя (без домашней папки, без входа)
             Console.WriteLine($"[DEBUG] Создаём системного пользователя {username}...");
-            RunCommand("sudo", $"useradd -M -s /usr/sbin/nologin {username}", allowNonZeroExit: true);
+            LinuxCommand.RunSudo("useradd", $"-M -s /usr/sbin/nologin {username}");
 
             // 2. Установить пароль системному пользователю
             Console.WriteLine($"[DEBUG] Устанавливаем системный пароль для {username}...");
-            RunCommandWithInput("sudo", "chpasswd", $"{username}:{password}");
+            LinuxCommand.RunSudo("chpasswd", $"{username}:{password}");
 
             // 3. Добавить пользователя в Samba с паролем
             Console.WriteLine($"[DEBUG] Добавляем {username} в Samba...");
-            RunCommandWithInput("sudo", $"smbpasswd -a -s {username}", $"{password}\n{password}");
+            LinuxCommand.RunSudo($"smbpasswd -a -s {username}", $"{password}\n{password}");
 
             // 4. Включить учётную запись (опционально, но рекомендуется)
             Console.WriteLine($"[DEBUG] Включаем учётную запись Samba для {username}...");
-            RunCommand("sudo", $"smbpasswd -e {username}");
+            LinuxCommand.RunSudo($"smbpasswd -e {username}");
         }
 
         // Удалить пользователя из Samba и из системы
@@ -348,66 +348,15 @@ namespace BlazorWebSSD
                 throw new ArgumentException("Username cannot be null or empty.", nameof(username));
 
             // 1. Удалить из Samba
-            RunCommand("sudo", $"smbpasswd -x {username}", allowNonZeroExit: true);
+            LinuxCommand.RunSudo($"smbpasswd -x {username}");
 
             // 2. Удалить системного пользователя (без удаления домашней папки, т.к. её нет)
             // Флаг -r удалит домашнюю папку и почту, но у нас -M, так что можно без -r
-            RunCommand("sudo", $"userdel {username}", allowNonZeroExit: true);
+            LinuxCommand.RunSudo($"userdel {username}");
         }
 
         // Вспомогательные методы для запуска команд
-        private static void RunCommand(string command, string args, bool allowNonZeroExit = false)
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = command,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            process?.WaitForExit();
-
-            if (!allowNonZeroExit && process?.ExitCode != 0)
-            {
-                var error = process?.StandardError.ReadToEnd();
-                throw new InvalidOperationException($"Command failed: {command} {args}. Error: {error}");
-            }
-        }
-
-        private static void RunCommandWithInput(string command, string args, string input)
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = command,
-                Arguments = args,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null)
-                throw new InvalidOperationException("Failed to start process.");
-
-            using (var writer = process.StandardInput)
-            {
-                writer.WriteLine(input);
-            }
-
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                var error = process.StandardError.ReadToEnd();
-                throw new InvalidOperationException($"Command failed: {command} {args}. Error: {error}");
-            }
-        }
+        
         private static void EnsureGlobalSection()
         {
             if (!File.Exists(SmbConfPath))

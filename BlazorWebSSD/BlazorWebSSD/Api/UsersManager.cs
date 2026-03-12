@@ -71,12 +71,12 @@ namespace BlazorWebSSD
             else
                 args = $"-s {shell} {username}";
 
-            RunCommand("useradd", args);
+            LinuxCommand.Run("useradd", args);
 
             if (groups != null && groups.Length > 0)
             {
                 var groupList = string.Join(",", groups);
-                RunCommand("usermod", $"-aG {groupList} {username}");
+                LinuxCommand.Run("usermod", $"-aG {groupList} {username}");
             }
         }
 
@@ -95,38 +95,10 @@ namespace BlazorWebSSD
             // Флаг -r удаляет домашнюю директорию
             var args = removeHome ? $"-r {username}" : username;
 
-            RunCommand("userdel", args);
+            LinuxCommand.Run("userdel", args);
         }
 
         // --- Вспомогательные методы ---
-
-        /// <summary>
-        /// Выполняет системную команду и проверяет код возврата.
-        /// </summary>
-        /// <param name="command">Имя исполняемой команды (например, "useradd").</param>
-        /// <param name="arguments">Аргументы команды.</param>
-        /// <exception cref="InvalidOperationException">Если команда завершилась с ненулевым кодом.</exception>
-        private static void RunCommand(string command, string arguments)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = command,                   // Исполняемый файл
-                Arguments = arguments,                // Аргументы командной строки
-                RedirectStandardOutput = true,        // Перехват стандартного вывода
-                RedirectStandardError = true,         // Перехват ошибок
-                UseShellExecute = false,              // Не использовать оболочку
-                CreateNoWindow = true                 // Не показывать окно консоли
-            };
-
-            using var process = Process.Start(startInfo);
-            process?.WaitForExit();
-
-            if (process?.ExitCode != 0)
-            {
-                var error = process?.StandardError.ReadToEnd() ?? "Unknown error";
-                throw new InvalidOperationException($"Command '{command} {arguments}' failed with exit code {process?.ExitCode}. Error: {error}");
-            }
-        }
 
         /// <summary>
         /// Читает файл /etc/passwd и возвращает список пользователей.

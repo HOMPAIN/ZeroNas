@@ -24,27 +24,11 @@ namespace BlazorWebSSD
 
     public static class WiFiManager
     {
-        private static string RunCommand(string command)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                Arguments = $"-c \"{command}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            process?.WaitForExit();
-            return process?.StandardOutput.ReadToEnd() ?? string.Empty;
-        }
 
         // Получить список доступных Wi-Fi сетей
         public static List<WiFiNetwork> GetAvailableNetworks()
         {
-            var output = RunCommand("nmcli -t -f SSID,SECURITY dev wifi list");
+            var output = LinuxCommand.Run("nmcli","-t -f SSID,SECURITY dev wifi list");
             var networks = new List<WiFiNetwork>();
 
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
@@ -65,10 +49,10 @@ namespace BlazorWebSSD
         // Подключиться к сети по SSID и паролю
         public static bool ConnectToNetwork(string ssid, string password)
         {
-            RunCommand($"nmcli con delete \"{ssid}\"");
+            LinuxCommand.Run("nmcli", $"con delete \"{ssid}\"");
 
             var command = $"nmcli dev wifi connect \"{ssid}\" password \"{password}\"";
-            var output = RunCommand(command);
+            var output = LinuxCommand.Run(command);
 
             return output.Contains("successfully activated") ||
                    (output.Contains("Device 'wlan") && output.Contains("successfully connected"));
@@ -78,7 +62,7 @@ namespace BlazorWebSSD
         public static List<SavedNetwork> GetSavedNetworks()
         {
             // Получаем имя и тип соединений
-            var output = RunCommand("nmcli -t -f NAME,TYPE con show");
+            var output = LinuxCommand.Run("nmcli","-t -f NAME,TYPE con show");
             var saved = new List<SavedNetwork>();
 
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
@@ -102,7 +86,7 @@ namespace BlazorWebSSD
         // Удалить сеть из сохранённых
         public static bool DeleteSavedNetwork(string ssid)
         {
-            var output = RunCommand($"nmcli con delete \"{ssid}\"");
+            var output = LinuxCommand.Run("nmcli",$"con delete \"{ssid}\"");
             return !output.Contains("Error") && !output.Contains("not found");
         }
 
@@ -110,7 +94,7 @@ namespace BlazorWebSSD
         private static string GetCurrentConnectionName()
         {
             // Получаем активные соединения с типом
-            var output = RunCommand("nmcli -t -f NAME,TYPE con show --active");
+            var output = LinuxCommand.Run("nmcli", "-t -f NAME,TYPE con show --active");
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
                 var parts = line.Split(':');
@@ -131,7 +115,7 @@ namespace BlazorWebSSD
         // Получить имя текущего подключения включая и собвенную точку доступа
         public static string GetCurrentActiveWiFiConnectionName()
         {
-            var output = RunCommand("nmcli -t -f NAME,TYPE con show --active");
+            var output = LinuxCommand.Run("nmcli", "-t -f NAME,TYPE con show --active");
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
                 var parts = line.Split(':');
@@ -153,42 +137,105 @@ namespace BlazorWebSSD
         // Получить подробную информацию о текущем подключении
         public static CurrentConnectionInfo GetCurrentConnectionInfo()
         {
-            var ssid = GetCurrentActiveWiFiConnectionName(); // теперь включает AP
+            var ssid = GetCurrentActiveWiFiConnectionName();
             if (string.IsNullOrEmpty(ssid))
                 return null;
 
-            // IP-адрес (предполагаем, что Wi-Fi интерфейс — wlan0)
-            var ipOutput = RunCommand("ip -4 addr show wlan0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'");
-            var ipAddress = ipOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+            // === IP-адрес: получаем весь вывод ip и парсим в C# ===
+            var ipOutput = LinuxCommand.Run("ip", "-4 addr show wlan0");
+            var ipAddress = "N/A";
 
-            // Скорость
+            if (!string.IsNullOrEmpty(ipOutput))
+            {
+                // Ищем строку вида "inet 192.168.1.100/24 ..."
+                var match = Regex.Match(ipOutput, @"inet\s+(\d{1,3}(?:\.\d{1,3}){3})");
+                if (match.Success)
+                    ipAddress = match.Groups[1].Value;
+            }
+
+            // === Скорость ===
             string speed = "N/A";
             try
             {
                 var speedPath = "/sys/class/net/wlan0/speed";
                 if (File.Exists(speedPath))
                 {
-                    speed = File.ReadAllText(speedPath).Trim() + " Mbps";
+                    var raw = File.ReadAllText(speedPath).Trim();
+                    if (int.TryParse(raw, out var s) && s > 0)
+                        speed = s + " Mbps";
                 }
             }
             catch { /* игнорируем */ }
 
-            // Уровень сигнала
+            // === Уровень сигнала ===
             string signal = "N/A";
-            var iwOutput = RunCommand("iw wlan0 station dump | grep 'signal:'");
-            var match = Regex.Match(iwOutput, @"signal:\s*(-?\d+)\s*dBm");
-            if (match.Success)
+            var iwOutput = LinuxCommand.Run("iw", "wlan0 station dump");
+            if (!string.IsNullOrEmpty(iwOutput))
             {
-                signal = match.Groups[1].Value + " dBm";
+                var match = Regex.Match(iwOutput, @"signal:\s*(-?\d+)\s*dBm");
+                if (match.Success)
+                    signal = match.Groups[1].Value + " dBm";
             }
 
             return new CurrentConnectionInfo
             {
                 Ssid = ssid,
-                IpAddress = ipAddress ?? "N/A",
+                IpAddress = ipAddress,
                 Speed = speed,
                 SignalStrength = signal
             };
+        }
+        /// <summary>
+        /// Отключает все активные беспроводные (Wi-Fi) соединения через NetworkManager.
+        /// </summary>
+        public static void DisconnectAllActiveWiFi()
+        {
+            Console.WriteLine("[DEBUG] Поиск активных Wi-Fi соединений...");
+
+            // 1. Получаем список активных подключений в машиночитаемом формате
+            // -t: вывод в формате name:type (без заголовков, разделитель :)
+            // -f NAME,TYPE: только имя подключения и его тип
+            var output = LinuxCommand.Run("nmcli", "-t -f NAME,TYPE con show --active");
+
+            if (string.IsNullOrEmpty(output))
+            {
+                Console.WriteLine("[DEBUG] Нет активных подключений.");
+                return;
+            }
+
+            // 2. Парсим вывод и отключаем только беспроводные соединения
+            var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var disconnectedCount = 0;
+
+            foreach (var line in lines)
+            {
+                var parts = line.Split(':');
+                if (parts.Length < 2) continue;
+
+                var connectionName = parts[0];
+                var connectionType = parts[1];
+
+                // Тип беспроводного соединения в nmcli: 802-11-wireless
+                if (connectionType == "802-11-wireless")
+                {
+                    Console.WriteLine($"[DEBUG] Отключаем Wi-Fi подключение: {connectionName}");
+
+                    // Отключаем подключение
+                    var result = LinuxCommand.Run("nmcli", $"con down \"{connectionName}\"");
+
+                    if (result != null)
+                    {
+                        disconnectedCount++;
+                        Console.WriteLine($"[DEBUG] Успешно отключено: {connectionName}");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"[ERROR] Не удалось отключить: {connectionName}");
+                    }
+                }
+            }
+
+            Console.WriteLine($"[DEBUG] Готово. Отключено соединений: {disconnectedCount}");
         }
 
         // Создать точку доступа Wi-Fi (hotspot)
@@ -200,14 +247,14 @@ namespace BlazorWebSSD
             try
             {
                 // Отключаем активные Wi-Fi соединения
-                RunCommand("nmcli -t -f NAME,TYPE con show --active | grep '802-11-wireless' | cut -d: -f1 | xargs -r nmcli con down");
+                DisconnectAllActiveWiFi();
 
                 // Удаляем старый профиль
-                RunCommand($"nmcli con delete \"{ssid}\" 2>/dev/null");
+                LinuxCommand.Run("nmcli", $"con delete \"{ssid}\" 2>/dev/null");
 
                 // Создаём БЕЗ ПАРОЛЯ
                 var createCmd = $"nmcli con add type wifi ifname wlan0 con-name \"{ssid}\" ssid \"{ssid}\"";
-                RunCommand(createCmd);
+                LinuxCommand.Run(createCmd);
 
                 // Настраиваем как ОТКРЫТУЮ AP
                 var modifyCmd =
@@ -217,9 +264,9 @@ namespace BlazorWebSSD
                     "ipv4.method shared " +
                     "ipv4.addresses 192.168.0.1/24";
 
-                RunCommand(modifyCmd);
+                LinuxCommand.Run(modifyCmd);
 
-                var upOutput = RunCommand($"nmcli con up \"{ssid}\" ifname wlan0");
+                var upOutput = LinuxCommand.Run("nmcli", $"con up \"{ssid}\" ifname wlan0");
 
                 return upOutput.Contains("successfully activated") ||
                        upOutput.Contains("Connection successfully activated");
@@ -233,7 +280,7 @@ namespace BlazorWebSSD
         // Остановить точку доступа
         public static bool StopHotspot(string ssid)
         {
-            var output = RunCommand($"nmcli con down \"{ssid}\"");
+            var output = LinuxCommand.Run("nmcli", $"con down \"{ssid}\"");
             return !output.Contains("Error");
         }
 
