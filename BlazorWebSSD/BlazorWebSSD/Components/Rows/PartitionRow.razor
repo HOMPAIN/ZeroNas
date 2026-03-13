@@ -3,10 +3,11 @@
 @inject DisksConfig DisksConfig
 @inject IJSRuntime JS
 
-<div class="border border-dark bg-light p-2 mb-2">
+<div class="border border-dark p-2 mb-2 @(Disabled ? "bg-dark text-white" : "bg-light")">
     <div class="row g-2">
         @*диск*@
         <div class="col text-center">
+            <h5 style="text-align: left;">Диск @State</h5>
             <div style="text-align: left;">Model: @(Disk?.Model ?? "-")</div>
             <div style="text-align: left;">Serial: @(Disk?.Serial ?? "-")</div>
             <div style="text-align: left;">Name: @(Disk?.DeviceName ?? "-")</div>
@@ -14,31 +15,20 @@
         </div>
         @*разделы*@
         <div class="col text-center">
+            <h5 style="text-align: left;">Разделы</h5>
             @if (Disk != null)
             {
                 @foreach (var part in Disk.Partitions)
                 {
                     <div style="text-align: left;">@part.ToString()</div>
                 }
-
-                <div style="text-align: left;">
-                    @State
-                    <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
-                    <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
-                    <button class="btn btn-sm btn-outline-primary" @onclick="(()=>Disk.Partitions[0].FormatAsExt4())">Форматировать</button>
-                </div>
             }
         </div>
-        <div class="col text-center">
-            <div style="text-align: right;">
-                <button class="btn btn-sm btn-outline-primary" @onclick=OnShareClick>Расшарить</button>
-            </div>
-            <div style="text-align: right;">
-                <button class="btn btn-sm btn-outline-primary" @onclick=OnBackupClick>Для Backup</button>
-            </div>
-            <div style="text-align: right;">
-                <button class="btn btn-sm btn-outline-primary" >Форматировать</button>
-            </div>
+        <div class="col">
+            <button class="btn btn-sm btn-outline-primary w-100 mb-2" disabled="@Disabled" @onclick=OnShareClick>Расшарить</button>
+            <button class="btn btn-sm btn-outline-primary w-100 mb-2" disabled="@Disabled" @onclick=OnBackupClick>Для Backup</button>
+            <button class="btn btn-sm btn-outline-primary w-100 mb-2" disabled="@Disabled" @onclick=DiskFormat>Форматировать</button>
+            <button class="btn btn-sm btn-outline-primary w-100" disabled="@Disabled">Стереть</button>
         </div>
     </div>
 </div>
@@ -58,7 +48,15 @@
     public DiskInfo ?Disk { get; set; }
     [Parameter]
     public PartitionInfo ?Partition { get; set; }
+    private bool Disabled = true;
 
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        if (Disk != null)
+            Disabled = !Disk.DeviceName.StartsWith("sd");
+    }
     private async Task OnShareClick()
     {
         if (Disk == null) 
@@ -99,5 +97,21 @@
         string sizeGb = (Disk.DeviceSizeBytes / (1024.0 * 1024 * 1024)).ToString("F2");
         //string usedGb = (0 / (1024.0 * 1024 * 1024)).ToString("F2");
         return sizeGb + " GB";
+    }
+    //форматировать диск в ext4
+    private async Task DiskFormat()
+    {
+        if (Disk == null)
+        {
+            Console.WriteLine("Нет диска");
+            return;
+        }
+        // Показываем окно подтверждения
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Диск будет отформатирован, продолжить?");
+
+        if (confirmed)
+        {
+            Disk.FormatWholeDisk("ext4");
+        }
     }
 }
