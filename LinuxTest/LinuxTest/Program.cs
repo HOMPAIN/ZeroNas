@@ -1,5 +1,8 @@
 ﻿using LinuxAPI;
 
+
+Console.WriteLine("-----------------DiskManager----------------");
+
 List<DiskInfo>? disks = DiskManager.GetDisks();
 
 if (disks != null)
@@ -56,7 +59,12 @@ if (ssdPartition != null)
         Console.WriteLine("Размонтировано успешно");
     }
 }*/
+Console.WriteLine("");
+Console.WriteLine("");
 
+
+
+Console.WriteLine("-----------------UsersManager----------------");
 List<UserEntry> users = UsersManager.GetAllUsersWithGroups();
 
 foreach (var user in users)
@@ -72,8 +80,12 @@ foreach (var user in users)
 
 // Удалить пользователя и его домашнюю папку
 //userManager.RemoveUser("testuser", removeHome: true);
+Console.WriteLine("");
+Console.WriteLine("");
 
 
+
+Console.WriteLine("-----------------WiFiManager----------------");
 //тест вифи
 // Список доступных сетей
 foreach (var net in WiFiManager.GetAvailableNetworks())
@@ -99,7 +111,12 @@ else
 {
     Console.WriteLine("No active Wi-Fi connection.");
 }
+Console.WriteLine("");
+Console.WriteLine("");
 
+
+
+Console.WriteLine("-----------------SambaManager----------------");
 //тест самбы
 const string username = "test_samba_user";
 const string password = "123456781";
