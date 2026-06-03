@@ -1,32 +1,37 @@
-﻿// See https://aka.ms/new-console-template for more information
-using LinuxTest;
+﻿using LinuxAPI;
 
-var dm = new DiskManager();
-dm.Refresh();
+List<DiskInfo>? disks = DiskManager.GetDisks();
 
-foreach (var disk in dm.Disks)
+if (disks != null)
 {
-    Console.WriteLine($"Disk: {disk.DeviceName}");
-    Console.WriteLine($"  Model:    {disk.Model}");
-    Console.WriteLine($"  Serial:   {disk.Serial}");
-    Console.WriteLine($"  Size:     {disk.DeviceSizeBytes / (1024L * 1024 * 1024):F1} GB");
+    foreach (DiskInfo disk in disks)
+    {
+        Console.WriteLine($"Disk: {disk.DeviceName}");
+        Console.WriteLine($"  Model:    {disk.Model}");
+        Console.WriteLine($"  Serial:   {disk.Serial}");
+        Console.WriteLine($"  Size:     {disk.DeviceSizeBytes / (1024L * 1024 * 1024):F1} GB");
 
-    if (disk.Partitions.Count == 0)
-    {
-        Console.WriteLine("  Partitions: none");
-    }
-    else
-    {
-        Console.WriteLine("  Partitions:");
-        foreach (var part in disk.Partitions)
+        if (disk.Partitions.Count == 0)
         {
-            Console.WriteLine($"    - {part.DeviceName}");
-            Console.WriteLine($"      Size:  {part.SizeBytes / (1024L * 1024):F0} MB");
-            Console.WriteLine($"      Used:  {part.UsedBytes / (1024L * 1024):F0} MB");
-            Console.WriteLine($"      Mount: {part.MountPoint ?? "—"}");
+            Console.WriteLine("  Partitions: none");
         }
+        else
+        {
+            Console.WriteLine("  Partitions:");
+            foreach (var part in disk.Partitions)
+            {
+                Console.WriteLine($"    - {part.DeviceName}");
+                Console.WriteLine($"      Size:  {part.SizeBytes / (1024L * 1024):F0} MB");
+                Console.WriteLine($"      Used:  {part.UsedBytes / (1024L * 1024):F0} MB");
+                Console.WriteLine($"      Mount: {part.MountPoint ?? "—"}");
+            }
+        }
+        Console.WriteLine();
     }
-    Console.WriteLine();
+}
+else
+{
+    Console.WriteLine("❌ Ошибка DiskManager вернул null");
 }
 
 /*
@@ -52,8 +57,7 @@ if (ssdPartition != null)
     }
 }*/
 
-var userManager = new UsersManager();
-var users = userManager.GetAllUsersWithGroups();
+List<UserEntry> users = UsersManager.GetAllUsersWithGroups();
 
 foreach (var user in users)
 {

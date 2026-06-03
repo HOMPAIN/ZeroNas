@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11819.183 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxTest", "LinuxTest\LinuxTest.csproj", "{42129373-C5D3-4386-9D29-BAB6DFD1C39F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxAPI", "..\LinuxAPI\LinuxAPI\LinuxAPI.csproj", "{78C28C2D-4C21-D9F6-AA3A-9F70FF50A3BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{42129373-C5D3-4386-9D29-BAB6DFD1C39F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42129373-C5D3-4386-9D29-BAB6DFD1C39F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42129373-C5D3-4386-9D29-BAB6DFD1C39F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78C28C2D-4C21-D9F6-AA3A-9F70FF50A3BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78C28C2D-4C21-D9F6-AA3A-9F70FF50A3BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78C28C2D-4C21-D9F6-AA3A-9F70FF50A3BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78C28C2D-4C21-D9F6-AA3A-9F70FF50A3BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
