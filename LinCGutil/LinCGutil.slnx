@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../LinuxAPI/LinuxAPI/LinuxAPI.csproj" />
+  <Project Path="LinCGutil/LinCGutil.csproj" />
+</Solution>
