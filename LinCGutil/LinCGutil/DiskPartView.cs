@@ -9,6 +9,7 @@ using Terminal.Gui.Views;
 
 namespace LinCGutil
 {
+    //компонент для отображения раздела диска
     public class DiskPartView:View
     {
         Label LName;

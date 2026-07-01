@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 
 namespace LinCGutil
 {
+    //компонент для отображения дисковой утилиты
     internal class DiskManagerView:View
     {
         public DiskManagerView()

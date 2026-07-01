@@ -7,6 +7,7 @@ using LinuxAPI;
 
 namespace LinCGutil
 {
+    //компонент отображения отдельного физического диска
     internal class DiskView:View
     {
         public FrameView Frame;
